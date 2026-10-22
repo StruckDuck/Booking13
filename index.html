@@ -87,6 +87,7 @@
   .slot.sel .s{color:var(--ink)}
   .slot.pending{background:repeating-linear-gradient(45deg,var(--faded),var(--faded) 6px,var(--oak) 6px,var(--oak) 12px);cursor:not-allowed}
   .slot.booked{background:var(--faded);cursor:not-allowed}
+  .slot.loading{opacity:.55;cursor:wait}
   .slot.booked .t{text-decoration:line-through;text-decoration-thickness:1px}
   .slot.blocked{background:transparent;border-style:dashed;color:rgba(200,176,144,.4);cursor:default;min-height:44px}
   .slot.blocked .s{color:rgba(200,176,144,.4)}
@@ -132,7 +133,7 @@
 </head>
 <body>
 
-<div class="demo" id="demoBar">PREVIEW with demo data. Nothing here is saved or sent.</div>
+<div class="demo" id="demoBar">PREVIEW: availability is live, but claims aren't saved yet.</div>
 
 <div class="wrap">
 
@@ -213,9 +214,20 @@
 
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
 /* ---------- CONFIG ---------- */
-const DEMO = true;                       // set false when wired to Firestore
+const firebaseConfig = {
+  apiKey: "AIzaSyAKWEE1hTCYi2OJIu728l3OTW4f8WKbmOY",
+  authDomain: "portfolio-fbb02.firebaseapp.com",
+  projectId: "portfolio-fbb02",
+  storageBucket: "portfolio-fbb02.firebasestorage.app",
+  messagingSenderId: "261396568216",
+  appId: "1:261396568216:web:8ad49c7dee49d2567218ed"
+};
+const DEMO = true;                       // claims are demo-only until the claim step is built
 const VENMO = 'JoshuaStacyUpClose';
 const CONTACT_PHONE = '4795103304';
 const CONTACT_EMAIL = 'joshuarstacy@gmail.com';
@@ -224,21 +236,23 @@ const DEPOSIT_PCT = 0.25;
 const DATE_LABEL = 'Fri Nov 13';
 
 /* Slots: start in minutes from midnight, each 60 min, 30 min travel gap between.
-   status: open | pending | booked | blocked (blocked = not for sale) */
+   status: loading | open | pending | booked | blocked (blocked = not for sale)
+   Slot ids s1-s8 are also the Firestore document ids in the "slots" collection. */
 const SLOTS = [
-  {id:'s1', start:11*60,       status:'booked'},
-  {id:'s2', start:12*60+30,    status:'pending'},
-  {id:'s3', start:14*60,       status:'open'},
-  {id:'s4', start:15*60+30,    status:'open'},
+  {id:'s1', start:11*60,       status:'loading'},
+  {id:'s2', start:12*60+30,    status:'loading'},
+  {id:'s3', start:14*60,       status:'loading'},
+  {id:'s4', start:15*60+30,    status:'loading'},
   {id:'s5', start:17*60,       status:'blocked'},
-  {id:'s6', start:18*60+30,    status:'open'},
-  {id:'s7', start:20*60,       status:'open'},
-  {id:'s8', start:21*60+30,    status:'open'}
+  {id:'s6', start:18*60+30,    status:'loading'},
+  {id:'s7', start:20*60,       status:'loading'},
+  {id:'s8', start:21*60+30,    status:'loading'}
 ];
 
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const selected = new Set();
+let liveState = 'loading';   // loading | ready | error
 
 function fmt(min){
   let h = Math.floor(min/60), m = min%60;
@@ -282,6 +296,7 @@ function renderGrid(){
     const label = s.status==='blocked' ? 'NOT AVAILABLE'
       : isSel ? 'SELECTED'
       : s.status==='open' ? 'OPEN'
+      : s.status==='loading' ? 'CHECKING'
       : s.status==='pending' ? 'HELD' : 'BOOKED';
     el.innerHTML = '<span class="t">'+fmt(s.start)+' to '+fmt(s.start+60)+'</span><span class="s">'+label+'</span>';
     if(s.status==='open') el.addEventListener('click',()=>toggle(s.id));
@@ -299,7 +314,10 @@ function renderGrid(){
   });
   const open = SLOTS.filter(s=>s.status==='open').length;
   const total = SLOTS.filter(s=>s.status!=='blocked').length;
-  $('count').textContent = (total-open) + ' of ' + total + ' slots claimed. ' + open + ' still open.';
+  $('count').textContent =
+    liveState==='loading' ? 'Checking availability...'
+    : liveState==='error' ? "Couldn't load live availability. Refresh the page, or call to book."
+    : (total-open) + ' of ' + total + ' slots claimed. ' + open + ' still open.';
 }
 
 function renderSummary(){
@@ -362,6 +380,56 @@ if(CONTACT_PHONE){
 if(CONTACT_EMAIL) bits.push('<a href="mailto:'+CONTACT_EMAIL+'">'+CONTACT_EMAIL+'</a>');
 $('contact').innerHTML = bits.length ? 'Questions? ' + bits.join(' &middot; ') : '';
 renderGrid(); renderSummary();
+
+/* ---------- live availability (Firestore) ---------- */
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const HOLD_MS = 48 * 60 * 60 * 1000;
+let rawSlots = {};
+
+function applyLive(){
+  const now = Date.now();
+  SLOTS.forEach(s=>{
+    if(s.status==='blocked') return;
+    const d = rawSlots[s.id];
+    let st = 'open';
+    if(d){
+      if(d.status==='booked') st = 'booked';
+      else if(d.status==='pending'){
+        const t = d.claimedAt && d.claimedAt.toMillis ? d.claimedAt.toMillis() : now;
+        st = (now - t < HOLD_MS) ? 'pending' : 'open';
+      }
+    }
+    s.status = st;
+    if(st !== 'open') selected.delete(s.id);
+  });
+  renderGrid(); renderSummary();
+}
+
+onSnapshot(collection(db,'slots'), snap=>{
+  rawSlots = {};
+  snap.forEach(doc=>{ rawSlots[doc.id] = doc.data(); });
+  liveState = 'ready';
+  applyLive();
+}, ()=>{
+  liveState = 'error';
+  renderGrid();
+});
+setInterval(()=>{ if(liveState==='ready') applyLive(); }, 60000);
+
+/* ---------- page view log (once per browser session) ---------- */
+try{
+  if(!sessionStorage.getItem('f13v')){
+    sessionStorage.setItem('f13v','1');
+    const q = new URLSearchParams(location.search);
+    addDoc(collection(db,'visits'), {
+      page: 'friday13',
+      src: q.get('src') || '',
+      referrer: document.referrer || '',
+      at: serverTimestamp()
+    }).catch(()=>{});
+  }
+}catch(e){}
 </script>
 </body>
 </html>
