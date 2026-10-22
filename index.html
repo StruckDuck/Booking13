@@ -54,6 +54,8 @@
   .muted{color:var(--parch)}
   figure.proof{margin:18px 0 6px;border:1px solid var(--rule);padding:6px;background:var(--oak)}
   figure.proof img{display:block;width:100%;height:auto}
+  a.ig{display:block;max-width:340px;margin:18px auto 0;text-align:center;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.14em;font-size:16px;color:var(--foxed);border:1px solid var(--litho);padding:16px}
+  a.ig:hover{background:var(--litho);color:var(--ink)}
 
   .price{
     border:1px solid var(--rule);background:var(--oak);padding:18px;margin-top:14px;
@@ -214,8 +216,8 @@
 
   <footer>
     <div class="sc">JOSHUA STACY UP CLOSE</div>
-    <div id="contact"></div>
-    <div><a href="https://instagram.com/joshua_stacy_up_close" target="_blank" rel="noopener">@joshua_stacy_up_close</a></div>
+    <div id="contact">Questions? <a href="tel:+14795103304">(479) 510-3304</a> &middot; <a href="mailto:joshuarstacy@gmail.com">joshuarstacy@gmail.com</a></div>
+    <a class="ig" href="https://www.instagram.com/joshua_stacy_up_close" target="_blank" rel="noopener">FIND ME ON INSTAGRAM</a>
   </footer>
 
 </div>
@@ -235,8 +237,6 @@ const firebaseConfig = {
 };
 const DEMO = true;                       // claims are demo-only until the claim step is built
 const VENMO = 'JoshuaStacyUpClose';
-const CONTACT_PHONE = '4795103304';
-const CONTACT_EMAIL = 'joshuarstacy@gmail.com';
 const PRICE = 200;
 const DEPOSIT_PCT = 0.25;
 const DATE_LABEL = 'Fri Nov 13';
@@ -377,14 +377,6 @@ $('form').addEventListener('submit', e=>{
 
 /* ---------- init ---------- */
 $('demoBar').hidden = !DEMO;
-const bits = [];
-if(CONTACT_PHONE){
-  const digits = CONTACT_PHONE.replace(/\D/g,'');
-  const pretty = digits.length===10 ? '('+digits.slice(0,3)+') '+digits.slice(3,6)+'-'+digits.slice(6) : CONTACT_PHONE;
-  bits.push('<a href="tel:+1'+digits+'">'+pretty+'</a>');
-}
-if(CONTACT_EMAIL) bits.push('<a href="mailto:'+CONTACT_EMAIL+'">'+CONTACT_EMAIL+'</a>');
-$('contact').innerHTML = bits.length ? 'Questions? ' + bits.join(' &middot; ') : '';
 renderGrid(); renderSummary();
 
 /* ---------- live availability (Firestore) ---------- */
