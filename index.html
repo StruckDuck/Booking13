@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Friday the 13th | Joshua Stacy Up Close</title>
+<meta name="description" content="Hire a close-up magician to entertain your waiting room on Friday the 13th, November 13. Claim your hour.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141210;        /* Inkwell */
+    --oak:#221C14;        /* Worn Oak */
+    --litho:#C05020;      /* Lithograph */
+    --faded:#304050;      /* Faded Ink */
+    --parch:#C8B090;      /* Parchment */
+    --foxed:#EDE0C0;      /* Foxed Paper */
+    --rule:rgba(200,176,144,.28);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--ink);color:var(--foxed);
+    font-family:'Crimson Pro',Georgia,serif;font-size:18px;line-height:1.55;
+  }
+  /* paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.07;z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 .9  0 0 0 0 .75  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:0 18px 80px}
+  h1,h2,h3{font-family:'IM Fell English',Georgia,serif;font-weight:400;margin:0;line-height:1.1}
+  .sc{font-family:'IM Fell English SC',Georgia,serif;letter-spacing:.08em}
+  a{color:var(--litho)}
+
+  .demo{background:var(--litho);color:var(--ink);text-align:center;font-size:14px;padding:6px 10px;position:relative;z-index:2}
+
+  header{padding:34px 0 8px;text-align:center}
+  .mark{font-size:13px;color:var(--parch);letter-spacing:.22em}
+  .rule{border:0;border-top:1px solid var(--rule);margin:14px 0}
+  .rule.dbl{border-top:3px double var(--rule)}
+
+  .hook{padding:18px 0 6px;text-align:center}
+  .date{color:var(--litho);font-size:15px;letter-spacing:.18em}
+  .hook h1{font-size:clamp(38px,11vw,58px);margin:10px 0 14px}
+  .hook h1 em{color:var(--litho);font-style:italic}
+  .lede{color:var(--parch);max-width:30em;margin:0 auto;font-size:19px}
+
+  section{padding:26px 0 4px}
+  h2{font-size:28px;color:var(--foxed);margin-bottom:10px}
+  h2 small{display:block;font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.2em;color:var(--litho);margin-bottom:6px}
+  p{margin:0 0 12px}
+  .muted{color:var(--parch)}
+
+  .price{
+    border:1px solid var(--rule);background:var(--oak);padding:18px;margin-top:14px;
+  }
+  .price .big{font-family:'IM Fell English',serif;font-size:34px;color:var(--foxed)}
+  .price .big span{color:var(--litho)}
+  .stack{width:100%;border-collapse:collapse;margin-top:12px;font-size:17px}
+  .stack th,.stack td{padding:8px 4px;text-align:left;border-top:1px solid var(--rule)}
+  .stack th{font-family:'IM Fell English SC',serif;font-weight:400;font-size:13px;letter-spacing:.14em;color:var(--parch);border-top:0}
+  .stack td:last-child,.stack th:last-child{text-align:right}
+  .free{color:var(--litho);font-style:italic}
+
+  /* schedule */
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--parch);margin:2px 0 12px}
+  .legend i{display:inline-block;width:11px;height:11px;border:1px solid var(--parch);margin-right:6px;vertical-align:-1px}
+  .legend .l-open{background:transparent}
+  .legend .l-sel{background:var(--litho);border-color:var(--litho)}
+  .legend .l-pend{background:repeating-linear-gradient(45deg,var(--faded),var(--faded) 3px,var(--oak) 3px,var(--oak) 6px)}
+  .legend .l-book{background:var(--faded)}
+  .count{font-family:'IM Fell English',serif;font-style:italic;color:var(--parch);margin:0 0 12px}
+
+  .grid{display:grid;gap:0}
+  .slot{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
+    background:var(--oak);border:1px solid var(--rule);padding:14px 16px;min-height:60px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .slot .t{font-family:'IM Fell English',serif;font-size:22px}
+  .slot .s{font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.14em;color:var(--parch)}
+  .slot.open:hover{border-color:var(--litho)}
+  .slot.sel{background:var(--litho);border-color:var(--litho);color:var(--ink)}
+  .slot.sel .s{color:var(--ink)}
+  .slot.pending{background:repeating-linear-gradient(45deg,var(--faded),var(--faded) 6px,var(--oak) 6px,var(--oak) 12px);cursor:not-allowed}
+  .slot.booked{background:var(--faded);cursor:not-allowed}
+  .slot.booked .t{text-decoration:line-through;text-decoration-thickness:1px}
+  .slot.blocked{background:transparent;border-style:dashed;color:rgba(200,176,144,.4);cursor:default;min-height:44px}
+  .slot.blocked .s{color:rgba(200,176,144,.4)}
+  /* travel gap between slots */
+  .gap{height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:.14em;color:rgba(200,176,144,.45);font-family:'IM Fell English SC',serif;position:relative}
+  .gap::before{content:"";position:absolute;left:28px;top:0;bottom:0;border-left:1px dashed var(--rule)}
+  .gap.joined{color:var(--litho)}
+  .gap.joined::before{border-left:2px solid var(--litho)}
+
+  /* claim */
+  .summary{border:1px solid var(--rule);background:var(--oak);padding:18px;margin-top:18px}
+  .summary .empty{color:var(--parch);font-style:italic;margin:0}
+  .run{padding:8px 0;border-top:1px solid var(--rule)}
+  .run:first-of-type{border-top:0}
+  .run b{font-family:'IM Fell English',serif;font-weight:400;font-size:21px}
+  .totals{display:flex;justify-content:space-between;align-items:baseline;border-top:3px double var(--rule);margin-top:10px;padding-top:12px}
+  .totals .amt{font-family:'IM Fell English',serif;font-size:30px}
+  .dep{color:var(--parch);margin:2px 0 0;text-align:right}
+  form{margin-top:16px;display:grid;gap:12px}
+  label{display:grid;gap:4px;font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.14em;color:var(--parch)}
+  input{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px;color:var(--foxed);background:var(--ink);
+    border:1px solid var(--rule);padding:12px;border-radius:0;width:100%;
+  }
+  input:focus{outline:2px solid var(--litho);outline-offset:0}
+  button.go{
+    font-family:'IM Fell English SC',serif;letter-spacing:.14em;font-size:16px;
+    background:var(--litho);color:var(--ink);border:0;padding:16px;cursor:pointer;width:100%;
+  }
+  button.go:disabled{background:var(--faded);color:var(--parch);cursor:not-allowed}
+  .err{color:#f0a070;min-height:1.2em;font-size:15px;margin:0}
+
+  .done{border:1px solid var(--litho);background:var(--oak);padding:18px;margin-top:18px}
+  .done h3{font-size:26px;margin-bottom:8px}
+  a.venmo{display:block;text-align:center;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.14em;background:var(--foxed);color:var(--ink);padding:16px;margin:14px 0 6px}
+
+  .fine{font-size:16px;color:var(--parch)}
+  .fine li{margin-bottom:6px}
+  footer{text-align:center;color:var(--parch);font-size:15px;padding-top:26px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="demo" id="demoBar">PREVIEW with demo data. Nothing here is saved or sent.</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="mark sc">JOSHUA STACY UP CLOSE</div>
+    <hr class="rule dbl">
+  </header>
+
+  <div class="hook">
+    <div class="date sc">11 // 13 // 26</div>
+    <h1>Give your waiting room <em>something to do.</em></h1>
+    <p class="lede">Friday the 13th fills a tattoo shop with walk-ins, friends and nervous first-timers, and every one of them has to wait. I make that wait bearable.</p>
+  </div>
+
+  <section>
+    <h2><small>WHAT YOU GET</small>Magic, up close and personal</h2>
+    <p>I'm Joshua Stacy, a close-up magician with 22 years of performing. I entertain the room one-on-one and in small groups: cards, mind reading, and impossible things happening right in front of your customers.</p>
+    <p>No stage, no sound system, no setup on your end. I keep people relaxed, laughing and talking, and I stay out of your artists' way.</p>
+  </section>
+
+  <section>
+    <h2><small>THE OFFER</small>One hour time slots - $150 each.</h2>
+    <p class="muted">Each slot is one hour with a half hour between slots. Book back to back slots and the half hour in between is on me.</p>
+    <div class="price">
+      <table class="stack">
+        <thead><tr><th>Slots</th><th>You get</th><th>Price</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>1 hr</td><td>$150</td></tr>
+          <tr><td>2</td><td>2.5 hrs <span class="free">(30 min free)</span></td><td>$300</td></tr>
+          <tr><td>3</td><td>4 hrs <span class="free">(1 hr free)</span></td><td>$450</td></tr>
+          <tr><td>4</td><td>5.5 hrs <span class="free">(1.5 hrs free)</span></td><td>$600</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <h2><small>THE DAY</small>Claim your hour.</h2>
+    <p class="muted">Open times update live, so you can see what's still available.</p>
+    <div class="legend">
+      <span><i class="l-open"></i>Open</span>
+      <span><i class="l-sel"></i>Yours</span>
+      <span><i class="l-pend"></i>Held</span>
+      <span><i class="l-book"></i>Booked</span>
+    </div>
+    <p class="count" id="count"></p>
+    <div class="grid" id="grid" role="group" aria-label="Available time slots"></div>
+    <p class="muted" style="font-size:15px;margin-top:10px">Tap an open slot to select it. Tap neighboring slots to stack them.</p>
+
+    <div class="summary" id="summary" aria-live="polite"></div>
+
+    <form id="form" novalidate hidden>
+      <label>Shop name<input id="shop" autocomplete="organization" required></label>
+      <label>Your name<input id="person" autocomplete="name" required></label>
+      <label>Phone<input id="phone" type="tel" autocomplete="tel" required></label>
+      <label>Email (optional)<input id="email" type="email" autocomplete="email"></label>
+      <p class="err" id="err"></p>
+      <button class="go" type="submit">CLAIM THESE SLOTS</button>
+    </form>
+
+    <div class="done" id="done" hidden></div>
+  </section>
+
+  <section>
+    <h2><small>THE FINE PRINT</small>How it works.</h2>
+    <ul class="fine">
+      <li>A 25% deposit by Venmo holds your slots.</li>
+      <li>Claims are released after 48 hours without a deposit.</li>
+      <li>Deposits are nonrefundable within a week of the date.</li>
+      <li>The balance is due to me on the day upon arrival.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="sc">JOSHUA STACY UP CLOSE</div>
+    <div id="contact"></div>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- CONFIG ---------- */
+const DEMO = true;                       // set false when wired to Firestore
+const VENMO = 'JoshuaStacyUpClose';
+const CONTACT_PHONE = '4795103304';
+const CONTACT_EMAIL = 'joshuarstacy@gmail.com';
+const PRICE = 150;
+const DEPOSIT_PCT = 0.25;
+const DATE_LABEL = 'Fri Nov 13';
+
+/* Slots: start in minutes from midnight, each 60 min, 30 min travel gap between.
+   status: open | pending | booked | blocked (blocked = not for sale) */
+const SLOTS = [
+  {id:'s1', start:11*60,       status:'booked'},
+  {id:'s2', start:12*60+30,    status:'pending'},
+  {id:'s3', start:14*60,       status:'open'},
+  {id:'s4', start:15*60+30,    status:'open'},
+  {id:'s5', start:17*60,       status:'blocked'},
+  {id:'s6', start:18*60+30,    status:'open'},
+  {id:'s7', start:20*60,       status:'open'},
+  {id:'s8', start:21*60+30,    status:'open'}
+];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const selected = new Set();
+
+function fmt(min){
+  let h = Math.floor(min/60), m = min%60;
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return h + ':' + String(m).padStart(2,'0') + ' ' + ap;
+}
+const money = n => '$' + n.toLocaleString('en-US');
+const hoursLabel = h => (h % 1 ? h.toFixed(1) : String(h)) + (h === 1 ? ' hr' : ' hrs');
+
+function runs(){
+  // group selected slots into runs of consecutive indices
+  const idx = SLOTS.map((s,i)=>selected.has(s.id)?i:-1).filter(i=>i>=0);
+  const out = [];
+  idx.forEach(i=>{
+    const last = out[out.length-1];
+    if(last && last[last.length-1] === i-1) last.push(i); else out.push([i]);
+  });
+  return out.map(r=>{
+    const n = r.length;
+    return {
+      n,
+      start: SLOTS[r[0]].start,
+      end: SLOTS[r[n-1]].start + 60,
+      hours: n + 0.5*(n-1),
+      free: 0.5*(n-1)
+    };
+  });
+}
+
+/* ---------- render grid ---------- */
+function renderGrid(){
+  const g = $('grid');
+  g.innerHTML = '';
+  SLOTS.forEach((s,i)=>{
+    const isSel = selected.has(s.id);
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'slot ' + (isSel ? 'sel' : s.status);
+    el.dataset.id = s.id;
+    const label = s.status==='blocked' ? 'NOT AVAILABLE'
+      : isSel ? 'SELECTED'
+      : s.status==='open' ? 'OPEN'
+      : s.status==='pending' ? 'HELD' : 'BOOKED';
+    el.innerHTML = '<span class="t">'+fmt(s.start)+' to '+fmt(s.start+60)+'</span><span class="s">'+label+'</span>';
+    if(s.status==='open') el.addEventListener('click',()=>toggle(s.id));
+    else el.disabled = false, el.setAttribute('aria-disabled','true');
+    g.appendChild(el);
+
+    const next = SLOTS[i+1];
+    if(next){
+      const joined = isSel && selected.has(next.id);
+      const gap = document.createElement('div');
+      gap.className = 'gap' + (joined ? ' joined' : '');
+      gap.textContent = joined ? '30 MIN FREE' : (s.status==='blocked'||next.status==='blocked' ? '' : 'TRAVEL');
+      g.appendChild(gap);
+    }
+  });
+  const open = SLOTS.filter(s=>s.status==='open').length;
+  const total = SLOTS.filter(s=>s.status!=='blocked').length;
+  $('count').textContent = (total-open) + ' of ' + total + ' slots claimed. ' + open + ' still open.';
+}
+
+function renderSummary(){
+  const r = runs();
+  const box = $('summary');
+  const count = selected.size;
+  if(!count){
+    box.innerHTML = '<p class="empty">Nothing selected yet.</p>';
+    $('form').hidden = true;
+    return;
+  }
+  const total = count * PRICE;
+  const dep = Math.round(total * DEPOSIT_PCT);
+  box.innerHTML = r.map(x=>
+    '<div class="run"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b><br><span class="muted">'+
+    hoursLabel(x.hours)+' &middot; '+x.n+(x.n===1?' slot':' slots')+
+    (x.free? ' &middot; <span class="free">'+hoursLabel(x.free)+' free</span>':'')+'</span></div>'
+  ).join('') +
+  '<div class="totals"><span class="sc">TOTAL</span><span class="amt">'+money(total)+'</span></div>'+
+  '<p class="dep">Deposit to hold: <b>'+money(dep)+'</b></p>';
+  $('form').hidden = false;
+}
+
+function toggle(id){
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  renderGrid(); renderSummary();
+}
+
+/* ---------- claim (demo only in step 1) ---------- */
+$('form').addEventListener('submit', e=>{
+  e.preventDefault();
+  const shop = $('shop').value.trim(), person = $('person').value.trim(), phone = $('phone').value.trim();
+  if(!shop || !person || !phone){ $('err').textContent = 'Shop name, your name and a phone number are required.'; return; }
+  $('err').textContent = '';
+  const r = runs();
+  const total = selected.size * PRICE;
+  const dep = Math.round(total * DEPOSIT_PCT);
+  const note = encodeURIComponent(DATE_LABEL + ' magic, ' + selected.size + (selected.size===1?' slot':' slots') + ', ' + shop);
+  const url = 'https://venmo.com/' + VENMO + '?txn=pay&amount=' + dep + '&note=' + note;
+  $('done').innerHTML =
+    '<h3>Slots held for '+shop+'.</h3>'+
+    r.map(x=>'<p style="margin:0"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b></p>').join('')+
+    '<p class="muted" style="margin-top:10px">Send the <b>'+money(dep)+'</b> deposit within 48 hours or the slots go back on the schedule.</p>'+
+    '<a class="venmo" href="'+url+'" target="_blank" rel="noopener">PAY '+money(dep)+' ON VENMO</a>'+
+    '<p class="muted" style="font-size:15px;margin:0">Venmo: @'+VENMO+'</p>'+
+    (DEMO?'<p class="muted" style="font-size:14px;margin-top:10px">(Demo: no claim was saved.)</p>':'');
+  $('done').hidden = false;
+  $('form').hidden = true;
+  $('done').scrollIntoView({behavior:'smooth',block:'center'});
+});
+
+/* ---------- init ---------- */
+$('demoBar').hidden = !DEMO;
+const bits = [];
+if(CONTACT_PHONE){
+  const digits = CONTACT_PHONE.replace(/\D/g,'');
+  const pretty = digits.length===10 ? '('+digits.slice(0,3)+') '+digits.slice(3,6)+'-'+digits.slice(6) : CONTACT_PHONE;
+  bits.push('<a href="tel:+1'+digits+'">'+pretty+'</a>');
+}
+if(CONTACT_EMAIL) bits.push('<a href="mailto:'+CONTACT_EMAIL+'">'+CONTACT_EMAIL+'</a>');
+$('contact').innerHTML = bits.length ? 'Questions? ' + bits.join(' &middot; ') : '';
+renderGrid(); renderSummary();
+</script>
+</body>
+</html>
