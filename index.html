@@ -34,8 +34,6 @@
   .sc{font-family:'IM Fell English SC',Georgia,serif;letter-spacing:.08em}
   a{color:var(--litho)}
 
-  .demo{background:var(--litho);color:var(--ink);text-align:center;font-size:14px;padding:6px 10px;position:relative;z-index:2}
-
   header{padding:34px 0 8px;text-align:center}
   .mark{font-size:13px;color:var(--parch);letter-spacing:.22em}
   .rule{border:0;border-top:1px solid var(--rule);margin:14px 0}
@@ -137,8 +135,6 @@
 </head>
 <body>
 
-<div class="demo" id="demoBar">PREVIEW: availability is live, but claims aren't saved yet.</div>
-
 <div class="wrap">
 
   <header>
@@ -224,7 +220,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, addDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 /* ---------- CONFIG ---------- */
 const firebaseConfig = {
@@ -235,7 +231,6 @@ const firebaseConfig = {
   messagingSenderId: "261396568216",
   appId: "1:261396568216:web:8ad49c7dee49d2567218ed"
 };
-const DEMO = true;                       // claims are demo-only until the claim step is built
 const VENMO = 'JoshuaStacyUpClose';
 const PRICE = 200;
 const DEPOSIT_PCT = 0.25;
@@ -352,31 +347,74 @@ function toggle(id){
   renderGrid(); renderSummary();
 }
 
-/* ---------- claim (demo only in step 1) ---------- */
-$('form').addEventListener('submit', e=>{
+/* ---------- claim ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let submitting = false;
+
+$('form').addEventListener('submit', async e=>{
   e.preventDefault();
-  const shop = $('shop').value.trim(), person = $('person').value.trim(), phone = $('phone').value.trim();
-  if(!shop || !person || !phone){ $('err').textContent = 'Shop name, your name and a phone number are required.'; return; }
-  $('err').textContent = '';
+  if(submitting) return;
+  const shop = $('shop').value.trim(), person = $('person').value.trim();
+  const phone = $('phone').value.trim(), email = $('email').value.trim();
+  const err = $('err');
+  if(!shop || !person || !phone){ err.textContent = 'Shop name, your name and a phone number are required.'; return; }
+  if(phone.replace(/\D/g,'').length < 7 || phone.length > 20){ err.textContent = 'Enter a valid phone number.'; return; }
+  if(shop.length > 79 || person.length > 79 || email.length > 119){ err.textContent = 'One of those entries is too long.'; return; }
+
+  const ids = SLOTS.filter(s=>selected.has(s.id)).map(s=>s.id);
+  if(!ids.length){ err.textContent = 'Select at least one slot.'; return; }
   const r = runs();
-  const total = selected.size * PRICE;
+  const total = ids.length * PRICE;
   const dep = Math.round(total * DEPOSIT_PCT);
-  const note = encodeURIComponent(DATE_LABEL + ' magic, ' + selected.size + (selected.size===1?' slot':' slots') + ', ' + shop);
-  const url = 'https://venmo.com/' + VENMO + '?txn=pay&amount=' + dep + '&note=' + note;
-  $('done').innerHTML =
-    '<h3>Slots held for '+shop+'.</h3>'+
-    r.map(x=>'<p style="margin:0"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b></p>').join('')+
-    '<p class="muted" style="margin-top:10px">Send the <b>'+money(dep)+'</b> deposit within 48 hours or the slots go back on the schedule.</p>'+
-    '<a class="venmo" href="'+url+'" target="_blank" rel="noopener">PAY '+money(dep)+' ON VENMO</a>'+
-    '<p class="muted" style="font-size:15px;margin:0">Venmo: @'+VENMO+'</p>'+
-    (DEMO?'<p class="muted" style="font-size:14px;margin-top:10px">(Demo: no claim was saved.)</p>':'');
-  $('done').hidden = false;
-  $('form').hidden = true;
-  $('done').scrollIntoView({behavior:'smooth',block:'center'});
+
+  submitting = true;
+  err.textContent = '';
+  const btn = $('form').querySelector('button.go');
+  btn.disabled = true; btn.textContent = 'CLAIMING...';
+
+  try{
+    const claimRef = doc(collection(db,'claims'));
+    await runTransaction(db, async tx=>{
+      const refs = ids.map(id=>doc(db,'slots',id));
+      const snaps = await Promise.all(refs.map(ref=>tx.get(ref)));
+      const now = Date.now();
+      snaps.forEach((snap,i)=>{
+        if(!snap.exists()) return;
+        const d = snap.data();
+        const t = d.claimedAt && d.claimedAt.toMillis ? d.claimedAt.toMillis() : now;
+        const taken = d.status === 'booked' || (d.status === 'pending' && now - t < HOLD_MS);
+        if(taken){ const x = new Error('taken'); x.code = 'slot-taken'; x.slotId = ids[i]; throw x; }
+      });
+      refs.forEach(ref=> tx.set(ref, {status:'pending', claimedAt: serverTimestamp(), claimId: claimRef.id}));
+      tx.set(claimRef, {shop, person, phone, email, slots: ids, createdAt: serverTimestamp()});
+    });
+
+    const note = encodeURIComponent(DATE_LABEL + ' magic, ' + ids.length + (ids.length===1?' slot':' slots') + ', ' + shop);
+    const url = 'https://venmo.com/' + VENMO + '?txn=pay&amount=' + dep + '&note=' + note;
+    $('done').innerHTML =
+      '<h3>Slots held for '+esc(shop)+'.</h3>'+
+      r.map(x=>'<p style="margin:0"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b></p>').join('')+
+      '<p class="muted" style="margin-top:10px">Send the <b>'+money(dep)+'</b> deposit within 48 hours or the slots go back on the schedule.</p>'+
+      '<a class="venmo" href="'+url+'" target="_blank" rel="noopener">PAY '+money(dep)+' ON VENMO</a>'+
+      '<p class="muted" style="font-size:15px;margin:0">Venmo: @'+VENMO+'</p>';
+    $('done').hidden = false;
+    selected.clear();
+    renderGrid(); renderSummary();
+    $('done').scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(ex){
+    if(ex && ex.code === 'slot-taken'){
+      const s = SLOTS.find(x=>x.id === ex.slotId);
+      err.textContent = (s ? fmt(s.start) : 'One of those slots') + ' was just claimed by another shop. Pick another time.';
+    }else{
+      err.textContent = "Couldn't save your claim. Check your connection and try again, or call (479) 510-3304.";
+    }
+  }finally{
+    submitting = false;
+    btn.disabled = false; btn.textContent = 'CLAIM THESE SLOTS';
+  }
 });
 
 /* ---------- init ---------- */
-$('demoBar').hidden = !DEMO;
 renderGrid(); renderSummary();
 
 /* ---------- live availability (Firestore) ---------- */
