@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Friday the 13th</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141210; --oak:#221C14; --litho:#C05020; --faded:#304050; --parch:#C8B090; --foxed:#EDE0C0;
+    --rule:rgba(200,176,144,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--foxed);font-family:'Crimson Pro',Georgia,serif;font-size:18px;line-height:1.5}
+  .wrap{max-width:720px;margin:0 auto;padding:0 18px 80px}
+  h1,h2,h3{font-family:'IM Fell English',Georgia,serif;font-weight:400;margin:0;line-height:1.15}
+  .sc{font-family:'IM Fell English SC',Georgia,serif;letter-spacing:.12em}
+  a{color:var(--litho)}
+  p{margin:0 0 10px}
+  .muted{color:var(--parch)}
+  header{padding:28px 0 8px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:3px double var(--rule)}
+  header h1{font-size:30px}
+  header .who{font-size:14px;color:var(--parch)}
+  section{padding:24px 0 4px}
+  h2{font-size:24px;margin-bottom:12px}
+  h2 small{display:block;font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.2em;color:var(--litho);margin-bottom:4px}
+
+  button{font-family:'IM Fell English SC',serif;letter-spacing:.12em;font-size:14px;cursor:pointer;padding:12px 16px;border:1px solid var(--litho);background:transparent;color:var(--foxed)}
+  button:hover{background:var(--litho);color:var(--ink)}
+  button.solid{background:var(--litho);color:var(--ink)}
+  button.solid:hover{background:var(--foxed)}
+  button.quiet{border-color:var(--rule);color:var(--parch)}
+  button:disabled{opacity:.5;cursor:wait}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+  .tile{border:1px solid var(--rule);background:var(--oak);padding:12px 14px}
+  .tile b{display:block;font-family:'IM Fell English',serif;font-weight:400;font-size:30px;line-height:1.1}
+  .tile span{font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.14em;color:var(--parch)}
+
+  .card{border:1px solid var(--rule);background:var(--oak);padding:16px;margin-bottom:12px}
+  .card.booked{border-color:var(--faded)}
+  .card.released{opacity:.6}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .card h3{font-size:24px}
+  .pill{font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.14em;padding:4px 10px;border:1px solid var(--parch);color:var(--parch);white-space:nowrap}
+  .pill.pending{border-color:var(--litho);color:var(--litho)}
+  .pill.booked{background:var(--faded);border-color:var(--faded);color:var(--foxed)}
+  .times p{margin:6px 0 0;font-family:'IM Fell English',serif;font-size:20px}
+  .meta{margin:10px 0 0;font-size:16px;color:var(--parch)}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  table{width:100%;border-collapse:collapse;font-size:16px;margin-top:8px}
+  th,td{text-align:left;padding:7px 4px;border-top:1px solid var(--rule)}
+  th{font-family:'IM Fell English SC',serif;font-weight:400;font-size:12px;letter-spacing:.14em;color:var(--parch);border-top:0}
+  td:last-child,th:last-child{text-align:right}
+
+  #gate{margin-top:40px;border:1px solid var(--rule);background:var(--oak);padding:24px;text-align:center}
+  .err{color:#f0a070;min-height:1.2em;margin:12px 0 0;font-size:16px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="sc muted" style="font-size:12px">JOSHUA STACY UP CLOSE</div>
+      <h1>Friday the 13th admin</h1>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="email"></span> &middot; <a href="#" id="signout">Sign out</a>
+    </div>
+  </header>
+
+  <div id="gate">
+    <p class="muted">Private page. Sign in with your Google account.</p>
+    <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
+    <p class="err" id="gateMsg" role="alert"></p>
+  </div>
+
+  <div id="app" hidden>
+
+    <section>
+      <h2><small>THE DAY</small>Schedule</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section>
+      <h2><small>CLAIMS</small>Who's asked for what</h2>
+      <p class="err" id="dataErr" role="alert"></p>
+      <div id="claims"></div>
+    </section>
+
+    <section>
+      <h2><small>VIEWS</small>Who looked at the page</h2>
+      <div class="tiles" id="viewTiles"></div>
+      <div id="viewTable"></div>
+      <div class="acts"><button class="quiet" id="refreshViews" type="button">REFRESH VIEWS</button></div>
+    </section>
+
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, getDocs, query, where, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAKWEE1hTCYi2OJIu728l3OTW4f8WKbmOY",
+  authDomain: "portfolio-fbb02.firebaseapp.com",
+  projectId: "portfolio-fbb02",
+  storageBucket: "portfolio-fbb02.firebasestorage.app",
+  messagingSenderId: "261396568216",
+  appId: "1:261396568216:web:8ad49c7dee49d2567218ed"
+};
+const ADMIN_EMAIL = 'joshuarstacy@gmail.com';
+const PRICE = 200;                 // keep in sync with index.html
+const DEPOSIT_PCT = 0.25;
+const HOLD_MS = 48 * 60 * 60 * 1000;
+
+/* same slot list and order as index.html */
+const SLOTS = [
+  {id:'s1', start:11*60}, {id:'s2', start:12*60+30}, {id:'s3', start:14*60}, {id:'s4', start:15*60+30},
+  {id:'s6', start:18*60+30}, {id:'s7', start:20*60}, {id:'s8', start:21*60+30}
+];
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$' + n.toLocaleString('en-US');
+function fmt(min){
+  let h = Math.floor(min/60), m = min%60;
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return h + ':' + String(m).padStart(2,'0') + ' ' + ap;
+}
+const ms = t => t && t.toMillis ? t.toMillis() : 0;
+function ago(t){
+  if(!t) return 'just now';
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if(m < 1) return 'just now';
+  if(m < 60) return m + ' min ago';
+  const h = Math.round(m / 60);
+  if(h < 48) return h + ' hr ago';
+  return Math.round(h / 24) + ' days ago';
+}
+function left(t){
+  const m = Math.max(0, Math.round(t / 60000));
+  return m >= 60 ? Math.floor(m/60) + ' hr ' + (m%60) + ' min' : m + ' min';
+}
+
+let slotMap = {}, claims = [], unsubs = [], haveSlots = false, haveClaims = false;
+
+function runsFor(ids){
+  const set = new Set(ids);
+  const idx = SLOTS.map((s,i)=>set.has(s.id)?i:-1).filter(i=>i>=0);
+  const out = [];
+  idx.forEach(i=>{
+    const last = out[out.length-1];
+    if(last && last[last.length-1] === i-1) last.push(i); else out.push([i]);
+  });
+  return out.map(r=>({start: SLOTS[r[0]].start, end: SLOTS[r[r.length-1]].start + 60, n: r.length}));
+}
+
+function claimState(c){
+  const docs = c.slots.map(id=>slotMap[id]);
+  const mine = docs.every(d=>d && d.claimId === c.id);
+  if(!mine) return {key:'released', label:'RELEASED OR EXPIRED', canConfirm:false, canRelease:false};
+  if(docs.every(d=>d.status === 'booked')) return {key:'booked', label:'BOOKED', canConfirm:false, canRelease:true};
+  const t = Math.min(...docs.map(d=>ms(d.claimedAt) || Date.now()));
+  const age = Date.now() - t;
+  if(age >= HOLD_MS) return {key:'pending', label:'HOLD EXPIRED', canConfirm:true, canRelease:true, note:'Slots reopen to others as soon as someone else claims them.'};
+  return {key:'pending', label:'HELD, ' + left(HOLD_MS - age).toUpperCase() + ' LEFT', canConfirm:true, canRelease:true};
+}
+
+function render(){
+  if(!(haveSlots && haveClaims)) return;
+
+  /* tiles */
+  let booked = 0, held = 0;
+  SLOTS.forEach(s=>{
+    const d = slotMap[s.id];
+    if(!d) return;
+    if(d.status === 'booked') booked++;
+    else if(d.status === 'pending' && Date.now() - ms(d.claimedAt) < HOLD_MS) held++;
+  });
+  const open = SLOTS.length - booked - held;
+  $('tiles').innerHTML =
+    tile(booked,'Booked') + tile(held,'Held') + tile(open,'Open') + tile(money(booked*PRICE),'Booked value');
+
+  /* claims */
+  const list = claims.slice().sort((a,b)=>(ms(b.createdAt)||Date.now()) - (ms(a.createdAt)||Date.now()));
+  if(!list.length){
+    $('claims').innerHTML = '<p class="muted"><i>No claims yet.</i></p>';
+    return;
+  }
+  $('claims').innerHTML = list.map(c=>{
+    const st = claimState(c);
+    const n = c.slots.length;
+    const dep = Math.round(n * PRICE * DEPOSIT_PCT);
+    const times = runsFor(c.slots).map(r=>'<p>'+fmt(r.start)+' to '+fmt(r.end)+'</p>').join('');
+    const digits = String(c.phone||'').replace(/\D/g,'');
+    const phone = digits ? '<a href="tel:'+esc(digits)+'">'+esc(c.phone)+'</a>' : esc(c.phone);
+    const email = c.email ? ' &middot; <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>' : '';
+    return '<div class="card '+st.key+'">'+
+      '<div class="top"><h3>'+esc(c.shop)+'</h3><span class="pill '+st.key+'">'+st.label+'</span></div>'+
+      '<div class="times">'+times+'</div>'+
+      '<p class="meta">'+esc(c.person)+' &middot; '+phone+email+'<br>'+
+        n+(n===1?' slot':' slots')+' &middot; '+money(n*PRICE)+' &middot; deposit '+money(dep)+' &middot; claimed '+ago(ms(c.createdAt))+'</p>'+
+      (st.note ? '<p class="meta"><i>'+st.note+'</i></p>' : '')+
+      '<div class="acts">'+
+        (st.canConfirm ? '<button class="solid" data-act="confirm" data-id="'+c.id+'">DEPOSIT RECEIVED</button>' : '')+
+        (st.canRelease ? '<button class="quiet" data-act="release" data-id="'+c.id+'">'+(st.key==='booked'?'CANCEL BOOKING':'RELEASE SLOTS')+'</button>' : '')+
+        (!st.canConfirm && !st.canRelease ? '<button class="quiet" data-act="remove" data-id="'+c.id+'">DELETE RECORD</button>' : '')+
+      '</div></div>';
+  }).join('');
+}
+const tile = (v,l) => '<div class="tile"><b>'+v+'</b><span>'+l.toUpperCase()+'</span></div>';
+
+/* ---------- actions ---------- */
+$('claims').addEventListener('click', async e=>{
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  const c = claims.find(x=>x.id === btn.dataset.id);
+  if(!c) return;
+  const act = btn.dataset.act;
+  try{
+    if(act === 'confirm'){
+      btn.disabled = true;
+      const b = writeBatch(db);
+      c.slots.forEach(id=> b.update(doc(db,'slots',id), {status:'booked'}));
+      b.update(doc(db,'claims',c.id), {status:'confirmed'});
+      await b.commit();
+    }else if(act === 'release'){
+      if(!confirm('Release these slots for ' + c.shop + '? They go back on the public schedule.')) return;
+      btn.disabled = true;
+      const b = writeBatch(db);
+      c.slots.forEach(id=>{ const d = slotMap[id]; if(d && d.claimId === c.id) b.delete(doc(db,'slots',id)); });
+      b.update(doc(db,'claims',c.id), {status:'released'});
+      await b.commit();
+    }else if(act === 'remove'){
+      if(!confirm('Delete the record for ' + c.shop + '?')) return;
+      btn.disabled = true;
+      await deleteDoc(doc(db,'claims',c.id));
+    }
+  }catch(ex){
+    $('dataErr').textContent = 'That did not save (' + (ex.code || 'error') + '). Try again.';
+    btn.disabled = false;
+  }
+});
+
+/* ---------- live data ---------- */
+function startListening(){
+  stopListening();
+  $('dataErr').textContent = '';
+  const fail = ex => { $('dataErr').textContent = 'Could not load data (' + (ex.code || 'error') + ').'; };
+  unsubs.push(onSnapshot(collection(db,'slots'), snap=>{
+    slotMap = {}; snap.forEach(d=>{ slotMap[d.id] = d.data(); });
+    haveSlots = true; render();
+  }, fail));
+  unsubs.push(onSnapshot(collection(db,'claims'), snap=>{
+    claims = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    haveClaims = true; render();
+  }, fail));
+}
+function stopListening(){
+  unsubs.forEach(u=>u()); unsubs = [];
+  haveSlots = haveClaims = false; slotMap = {}; claims = [];
+}
+setInterval(render, 30000);
+
+/* ---------- views ---------- */
+async function loadViews(){
+  try{
+    const snap = await getDocs(query(collection(db,'visits'), where('page','==','friday13')));
+    const rows = snap.docs.map(d=>d.data()).map(d=>({at: ms(d.at), src: d.src || '', ref: d.referrer || ''})).sort((a,b)=>b.at - a.at);
+    const now = new Date();
+    const today = rows.filter(r=>r.at && new Date(r.at).toDateString() === now.toDateString()).length;
+    const week = rows.filter(r=>r.at && Date.now() - r.at < 7*24*3600*1000).length;
+    $('viewTiles').innerHTML = tile(rows.length,'Total views') + tile(today,'Today') + tile(week,'Last 7 days');
+
+    const by = {};
+    rows.forEach(r=>{ const k = r.src || 'no tag'; by[k] = (by[k]||0) + 1; });
+    const srcRows = Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<tr><td>'+esc(k)+'</td><td>'+v+'</td></tr>').join('');
+    const recent = rows.slice(0,8).map(r=>
+      '<tr><td>'+(r.at ? new Date(r.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '')+
+      '</td><td>'+esc(r.src || 'no tag')+'</td></tr>').join('');
+    $('viewTable').innerHTML = rows.length
+      ? '<table><thead><tr><th>Source tag</th><th>Views</th></tr></thead><tbody>'+srcRows+'</tbody></table>'+
+        '<table><thead><tr><th>Recent</th><th>Source</th></tr></thead><tbody>'+recent+'</tbody></table>'+
+        '<p class="meta muted" style="font-size:15px;margin-top:10px">One view is counted per browser session. Cards scanned with the ?src=card tag show up as "card".</p>'
+      : '<p class="muted"><i>No views logged yet.</i></p>';
+  }catch(ex){
+    $('viewTable').innerHTML = '<p class="err">Could not load views (' + esc(ex.code || 'error') + ').</p>';
+  }
+}
+$('refreshViews').addEventListener('click', loadViews);
+
+/* ---------- auth ---------- */
+const provider = new GoogleAuthProvider();
+$('signin').addEventListener('click', ()=>{
+  $('gateMsg').textContent = '';
+  signInWithPopup(auth, provider).catch(ex=>{
+    $('gateMsg').textContent = 'Sign-in failed (' + (ex.code || 'error') + ').';
+  });
+});
+$('signout').addEventListener('click', e=>{ e.preventDefault(); signOut(auth); });
+
+onAuthStateChanged(auth, user=>{
+  if(!user){
+    stopListening();
+    $('app').hidden = true; $('who').hidden = true; $('gate').hidden = false;
+    return;
+  }
+  if(user.email !== ADMIN_EMAIL){
+    $('gateMsg').textContent = user.email + ' is not authorized here.';
+    signOut(auth);
+    return;
+  }
+  $('gate').hidden = true; $('app').hidden = false; $('who').hidden = false;
+  $('email').textContent = user.email;
+  startListening();
+  loadViews();
+});
+</script>
+</body>
+</html>

@@ -264,9 +264,9 @@ function fmt(min){
 const money = n => '$' + n.toLocaleString('en-US');
 const hoursLabel = h => (h % 1 ? h.toFixed(1) : String(h)) + (h === 1 ? ' hr' : ' hrs');
 
-function runs(){
-  // group selected slots into runs of consecutive indices
-  const idx = SLOTS.map((s,i)=>selected.has(s.id)?i:-1).filter(i=>i>=0);
+function runs(set = selected){
+  // group slots in the set into runs of consecutive indices
+  const idx = SLOTS.map((s,i)=>set.has(s.id)?i:-1).filter(i=>i>=0);
   const out = [];
   idx.forEach(i=>{
     const last = out[out.length-1];
@@ -351,6 +351,39 @@ function toggle(id){
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let submitting = false;
 
+function claimPanel(c, state){
+  const times = runs(new Set(c.ids)).map(x=>'<p style="margin:0"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b></p>').join('');
+  if(state === 'booked'){
+    $('done').innerHTML =
+      '<h3>You&rsquo;re booked, '+esc(c.shop)+'.</h3>'+times+
+      '<p class="muted" style="margin-top:10px">Deposit received. See you on the day.</p>';
+  }else{
+    const note = encodeURIComponent(DATE_LABEL + ' magic, ' + c.ids.length + (c.ids.length===1?' slot':' slots') + ', ' + c.shop);
+    const url = 'https://venmo.com/' + VENMO + '?txn=pay&amount=' + c.dep + '&note=' + note;
+    $('done').innerHTML =
+      '<h3>Slots held for '+esc(c.shop)+'.</h3>'+times+
+      '<p class="muted" style="margin-top:10px">Send the <b>'+money(c.dep)+'</b> deposit within 48 hours or the slots go back on the schedule.</p>'+
+      '<a class="venmo" href="'+url+'" target="_blank" rel="noopener">PAY '+money(c.dep)+' ON VENMO</a>'+
+      '<p class="muted" style="font-size:15px;margin:0">Venmo: @'+VENMO+'</p>';
+  }
+  $('done').hidden = false;
+}
+
+function renderMyClaim(){
+  let c = null;
+  try{ c = JSON.parse(localStorage.getItem('f13claim') || 'null'); }catch(e){}
+  if(!c || !c.ids) return;
+  if(Date.now() - c.at < 15000){ claimPanel(c, 'pending'); return; }
+  const docs = c.ids.map(id=>rawSlots[id]);
+  const mine = docs.every(d=>d && d.claimId === c.id);
+  const drop = ()=>{ try{ localStorage.removeItem('f13claim'); }catch(e){} $('done').hidden = true; };
+  if(!mine){ drop(); return; }
+  if(docs.every(d=>d.status === 'booked')){ claimPanel(c, 'booked'); return; }
+  const t = docs.map(d=>d.claimedAt && d.claimedAt.toMillis ? d.claimedAt.toMillis() : c.at);
+  if(Date.now() - Math.min(...t) >= HOLD_MS){ drop(); return; }
+  claimPanel(c, 'pending');
+}
+
 $('form').addEventListener('submit', async e=>{
   e.preventDefault();
   if(submitting) return;
@@ -389,15 +422,9 @@ $('form').addEventListener('submit', async e=>{
       tx.set(claimRef, {shop, person, phone, email, slots: ids, createdAt: serverTimestamp()});
     });
 
-    const note = encodeURIComponent(DATE_LABEL + ' magic, ' + ids.length + (ids.length===1?' slot':' slots') + ', ' + shop);
-    const url = 'https://venmo.com/' + VENMO + '?txn=pay&amount=' + dep + '&note=' + note;
-    $('done').innerHTML =
-      '<h3>Slots held for '+esc(shop)+'.</h3>'+
-      r.map(x=>'<p style="margin:0"><b>'+fmt(x.start)+' to '+fmt(x.end)+'</b></p>').join('')+
-      '<p class="muted" style="margin-top:10px">Send the <b>'+money(dep)+'</b> deposit within 48 hours or the slots go back on the schedule.</p>'+
-      '<a class="venmo" href="'+url+'" target="_blank" rel="noopener">PAY '+money(dep)+' ON VENMO</a>'+
-      '<p class="muted" style="font-size:15px;margin:0">Venmo: @'+VENMO+'</p>';
-    $('done').hidden = false;
+    const c = {id: claimRef.id, shop, ids, dep, at: Date.now()};
+    try{ localStorage.setItem('f13claim', JSON.stringify(c)); }catch(e){}
+    claimPanel(c, 'pending');
     selected.clear();
     renderGrid(); renderSummary();
     $('done').scrollIntoView({behavior:'smooth',block:'center'});
@@ -440,6 +467,7 @@ function applyLive(){
     if(st !== 'open') selected.delete(s.id);
   });
   renderGrid(); renderSummary();
+  renderMyClaim();
 }
 
 onSnapshot(collection(db,'slots'), snap=>{
