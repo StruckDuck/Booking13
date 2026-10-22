@@ -1,4 +1,4 @@
-<!doctype html> 
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -314,7 +314,7 @@ function renderGrid(){
       const joined = isSel && selected.has(next.id);
       const gap = document.createElement('div');
       gap.className = 'gap' + (joined ? ' joined' : '');
-      gap.textContent = joined ? '30 MIN FREE' : (s.status==='blocked'||next.status==='blocked' ? '' : 'TRAVEL');
+      gap.textContent = joined ? '30 MIN FREE' : '';
       g.appendChild(gap);
     }
   });
