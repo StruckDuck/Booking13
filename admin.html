@@ -31,6 +31,9 @@
   button{font-family:'IM Fell English SC',serif;letter-spacing:.12em;font-size:14px;cursor:pointer;padding:12px 16px;border:1px solid var(--litho);background:transparent;color:var(--foxed)}
   button:hover{background:var(--litho);color:var(--ink)}
   button.solid{background:var(--litho);color:var(--ink)}
+  a.btn{display:inline-block;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.12em;font-size:14px;padding:12px 16px;border:1px solid var(--litho);background:transparent;color:var(--foxed)}
+  a.btn.solid{background:var(--litho);color:var(--ink)}
+  a.btn:hover{background:var(--foxed);color:var(--ink)}
   button.solid:hover{background:var(--foxed)}
   button.quiet{border-color:var(--rule);color:var(--parch)}
   button:disabled{opacity:.5;cursor:wait}
@@ -208,6 +211,12 @@ function render(){
     const digits = String(c.phone||'').replace(/\D/g,'');
     const phone = digits ? '<a href="tel:'+esc(digits)+'">'+esc(c.phone)+'</a>' : esc(c.phone);
     const email = c.email ? ' &middot; <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>' : '';
+    const bal = n * PRICE - dep;
+    const lines = runsFor(c.slots).map(r=>fmt(r.start)+' to '+fmt(r.end)).join('\n');
+    const body = 'Hi ' + c.person + ',\n\nYour deposit is received and your time is booked for Friday, November 13:\n\n' + lines +
+      '\n\nThe remaining balance of ' + money(bal) + ' is due when I arrive. Questions before then? Call or text me at (479) 510-3304.\n\nSee you then,\nJoshua Stacy Up Close';
+    const mailto = 'mailto:' + encodeURI(String(c.email||'').trim()) + '?subject=' + encodeURIComponent('Your Friday the 13th time is confirmed') + '&body=' + encodeURIComponent(body);
+    const emailBtn = (st.key === 'booked' && c.email) ? '<a class="btn solid" href="'+esc(mailto)+'">EMAIL SHOP</a>' : '';
     return '<div class="card '+st.key+'">'+
       '<div class="top"><h3>'+esc(c.shop)+'</h3><span class="pill '+st.key+'">'+st.label+'</span></div>'+
       '<div class="times">'+times+'</div>'+
@@ -215,7 +224,7 @@ function render(){
         n+(n===1?' slot':' slots')+' &middot; '+money(n*PRICE)+' &middot; deposit '+money(dep)+' &middot; claimed '+ago(ms(c.createdAt))+'</p>'+
       (st.note ? '<p class="meta"><i>'+st.note+'</i></p>' : '')+
       '<div class="acts">'+
-        (st.canConfirm ? '<button class="solid" data-act="confirm" data-id="'+c.id+'">DEPOSIT RECEIVED</button>' : '')+
+        emailBtn+(st.canConfirm ? '<button class="solid" data-act="confirm" data-id="'+c.id+'">DEPOSIT RECEIVED</button>' : '')+
         (st.canRelease ? '<button class="quiet" data-act="release" data-id="'+c.id+'">'+(st.key==='booked'?'CANCEL BOOKING':'RELEASE SLOTS')+'</button>' : '')+
         (!st.canConfirm && !st.canRelease ? '<button class="quiet" data-act="remove" data-id="'+c.id+'">DELETE RECORD</button>' : '')+
       '</div></div>';

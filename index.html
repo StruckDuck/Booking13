@@ -52,7 +52,7 @@
   .muted{color:var(--parch)}
   figure.proof{margin:18px 0 6px;border:1px solid var(--rule);padding:6px;background:var(--oak)}
   figure.proof img{display:block;width:100%;height:auto}
-  a.ig{display:block;max-width:340px;margin:18px auto 0;text-align:center;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.14em;font-size:16px;color:var(--foxed);border:1px solid var(--litho);padding:16px}
+  a.ig{display:block;width:fit-content;margin:14px auto 0;text-align:center;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.14em;font-size:13px;color:var(--foxed);border:1px solid var(--litho);padding:9px 18px}
   a.ig:hover{background:var(--litho);color:var(--ink)}
 
   .price{
@@ -155,6 +155,7 @@
     <figure class="proof">
       <img src="assets/performing.jpg" alt="Two people laughing with their hands over their faces while a magician holds out a card across a shop counter" width="1280" height="720">
     </figure>
+    <a class="ig" href="https://www.instagram.com/joshua_stacy_up_close" target="_blank" rel="noopener">FIND ME ON INSTAGRAM</a>
   </section>
 
   <section>
@@ -192,7 +193,7 @@
       <label>Shop name<input id="shop" autocomplete="organization" required></label>
       <label>Your name<input id="person" autocomplete="name" required></label>
       <label>Phone<input id="phone" type="tel" autocomplete="tel" required></label>
-      <label>Email (optional)<input id="email" type="email" autocomplete="email"></label>
+      <label>Email<input id="email" type="email" autocomplete="email" required></label>
       <p class="err" id="err"></p>
       <button class="go" type="submit">CLAIM THESE SLOTS</button>
     </form>
@@ -213,7 +214,6 @@
   <footer>
     <div class="sc">JOSHUA STACY UP CLOSE</div>
     <div id="contact">Questions? <a href="tel:+14795103304">(479) 510-3304</a> &middot; <a href="mailto:joshuarstacy@gmail.com">joshuarstacy@gmail.com</a></div>
-    <a class="ig" href="https://www.instagram.com/joshua_stacy_up_close" target="_blank" rel="noopener">FIND ME ON INSTAGRAM</a>
   </footer>
 
 </div>
@@ -390,8 +390,9 @@ $('form').addEventListener('submit', async e=>{
   const shop = $('shop').value.trim(), person = $('person').value.trim();
   const phone = $('phone').value.trim(), email = $('email').value.trim();
   const err = $('err');
-  if(!shop || !person || !phone){ err.textContent = 'Shop name, your name and a phone number are required.'; return; }
+  if(!shop || !person || !phone || !email){ err.textContent = 'Shop name, your name, phone and email are required.'; return; }
   if(phone.replace(/\D/g,'').length < 7 || phone.length > 20){ err.textContent = 'Enter a valid phone number.'; return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = 'Enter a valid email address.'; return; }
   if(shop.length > 79 || person.length > 79 || email.length > 119){ err.textContent = 'One of those entries is too long.'; return; }
 
   const ids = SLOTS.filter(s=>selected.has(s.id)).map(s=>s.id);
