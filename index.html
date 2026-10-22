@@ -52,6 +52,8 @@
   h2 small{display:block;font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.2em;color:var(--litho);margin-bottom:6px}
   p{margin:0 0 12px}
   .muted{color:var(--parch)}
+  figure.proof{margin:18px 0 6px;border:1px solid var(--rule);padding:6px;background:var(--oak)}
+  figure.proof img{display:block;width:100%;height:auto}
 
   .price{
     border:1px solid var(--rule);background:var(--oak);padding:18px;margin-top:14px;
@@ -152,19 +154,22 @@
     <h2><small>WHAT YOU GET</small>Magic, up close and personal</h2>
     <p>I'm Joshua Stacy, a close-up magician with 22 years of performing. I entertain the room one-on-one and in small groups: cards, mind reading, and impossible things happening right in front of your customers.</p>
     <p>No stage, no sound system, no setup on your end. I keep people relaxed, laughing and talking, and I stay out of your artists' way.</p>
+    <figure class="proof">
+      <img src="assets/performing.jpg" alt="Two people laughing with their hands over their faces while a magician holds out a card across a shop counter" width="1280" height="720">
+    </figure>
   </section>
 
   <section>
-    <h2><small>THE OFFER</small>One hour time slots - $150 each.</h2>
+    <h2><small>THE OFFER</small>One hour time slots - $200 each.</h2>
     <p class="muted">Each slot is one hour with a half hour between slots. Book back to back slots and the half hour in between is on me.</p>
     <div class="price">
       <table class="stack">
         <thead><tr><th>Slots</th><th>You get</th><th>Price</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td>1 hr</td><td>$150</td></tr>
-          <tr><td>2</td><td>2.5 hrs <span class="free">(30 min free)</span></td><td>$300</td></tr>
-          <tr><td>3</td><td>4 hrs <span class="free">(1 hr free)</span></td><td>$450</td></tr>
-          <tr><td>4</td><td>5.5 hrs <span class="free">(1.5 hrs free)</span></td><td>$600</td></tr>
+          <tr><td>1</td><td>1 hr</td><td>$200</td></tr>
+          <tr><td>2</td><td>2.5 hrs <span class="free">(30 min free)</span></td><td>$400</td></tr>
+          <tr><td>3</td><td>4 hrs <span class="free">(1 hr free)</span></td><td>$600</td></tr>
+          <tr><td>4</td><td>5.5 hrs <span class="free">(1.5 hrs free)</span></td><td>$800</td></tr>
         </tbody>
       </table>
     </div>
@@ -210,6 +215,7 @@
   <footer>
     <div class="sc">JOSHUA STACY UP CLOSE</div>
     <div id="contact"></div>
+    <div><a href="https://instagram.com/joshua_stacy_up_close" target="_blank" rel="noopener">@joshua_stacy_up_close</a></div>
   </footer>
 
 </div>
@@ -231,7 +237,7 @@ const DEMO = true;                       // claims are demo-only until the claim
 const VENMO = 'JoshuaStacyUpClose';
 const CONTACT_PHONE = '4795103304';
 const CONTACT_EMAIL = 'joshuarstacy@gmail.com';
-const PRICE = 150;
+const PRICE = 200;
 const DEPOSIT_PCT = 0.25;
 const DATE_LABEL = 'Fri Nov 13';
 
