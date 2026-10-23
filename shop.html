@@ -24,7 +24,7 @@
     </div>
   </header>
 
-  <div id="gate">
+  <div id="gate" hidden>
     <p class="muted">Private page. Sign in with your Google account.</p>
     <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
     <p class="err" id="gateMsg" role="alert"></p>
@@ -57,31 +57,16 @@
         <div id="igWrap"></div>
       </section>
 
-      <section>
+      <section id="logCard">
         <h2><small>CONTACT LOG</small>Who you've talked to</h2>
         <div id="logList"></div>
-      </section>
-
-      <section>
-        <h2><small>NEXT STEP</small>What's next</h2>
-        <p class="next" id="nextSummary"></p>
-        <form id="nextForm" class="stack" novalidate>
-          <div class="dtrow">
-            <label>Date<input type="date" id="nDate"></label>
-            <label>Time<input type="time" id="nTime"></label>
-          </div>
-          <label>What you'll do<input id="nText" autocomplete="off" placeholder="Text Dana about the 2 to 4 pm slots"></label>
-          <p class="err" id="nextErr" role="alert"></p>
-          <div class="acts" style="margin-top:0">
-            <button class="solid small" type="submit">SAVE NEXT STEP</button>
-            <a class="btn small" id="calBtn" target="_blank" rel="noopener" hidden>ADD TO CALENDAR</a>
-            <button class="small" id="logToggle" type="button">UPDATE CONTACT LOG</button>
-            <button class="quiet small" id="clearNext" type="button">CLEAR</button>
-          </div>
-        </form>
-        <p class="ok" id="nextMsg"></p>
+        <div class="acts" id="logBtnRow">
+          <button class="small" id="logAdd" type="button">UPDATE CONTACT LOG</button>
+        </div>
+        <p class="ok" id="logMsg"></p>
 
         <form id="logForm" class="stack logbox" novalidate hidden>
+          <div class="subhead" id="logTitle" style="margin:0">NEW ENTRY</div>
           <div class="dtrow">
             <label>Date<input type="date" id="lDate"></label>
             <label>Method<select id="lMethod"></select></label>
@@ -97,14 +82,38 @@
       </section>
 
       <section>
-        <h2><small>TRACKING</small>Link tag</h2>
-        <form id="tagForm" class="tagbar" novalidate>
-          <input id="tagInput" autocomplete="off" autocapitalize="off" aria-label="Tag">
-          <button class="solid small" type="submit">SAVE</button>
-          <button class="small" id="copyLink" type="button">COPY</button>
+        <h2><small>NEXT STEP</small>What's next</h2>
+        <p class="next" id="nextSummary"></p>
+        <p class="calnote" id="calNote" hidden>You changed this next step. Update your calendar entry to match. <a href="#" id="calDismiss">Done</a></p>
+        <form id="nextForm" class="stack" novalidate>
+          <div class="dtrow">
+            <label>Date<input type="date" id="nDate"></label>
+            <label>Time<input type="time" id="nTime"></label>
+          </div>
+          <label>What you'll do<input id="nText" autocomplete="off" placeholder="Text Dana about the 2 to 4 pm slots"></label>
+          <p class="err" id="nextErr" role="alert"></p>
+          <div class="acts" style="margin-top:0">
+            <button class="solid small" type="submit">SAVE NEXT STEP</button>
+            <a class="btn small" id="calBtn" target="_blank" rel="noopener" hidden>ADD TO CALENDAR</a>
+            <button class="small" id="logToggle" type="button">UPDATE CONTACT LOG</button>
+            <button class="quiet small" id="clearNext" type="button">CLEAR</button>
+          </div>
+        </form>
+        <p class="ok" id="nextMsg"></p>
+      </section>
+
+      <section>
+        <h2><small>TRACKING</small>Link tags</h2>
+        <form id="tagForm" class="tagform" novalidate>
+          <div class="row2">
+            <input id="tagInput" autocomplete="off" autocapitalize="off" placeholder="Tag, like beeline-dm" aria-label="New tag">
+            <input id="tagNote" autocomplete="off" maxlength="80" placeholder="Descriptor, like DM to owner" aria-label="Descriptor">
+          </div>
+          <div><button class="solid small" type="submit">SAVE TAG</button></div>
         </form>
         <p class="err" id="tagErr" role="alert" style="margin-top:6px"></p>
-        <p class="meta" id="tagViews" style="margin:4px 0 0"></p>
+        <div id="tagList"></div>
+        <p class="meta" style="margin:8px 0 0"><a href="#" id="refreshViews">refresh views</a></p>
         <p class="ok" id="tagMsg"></p>
       </section>
 
@@ -120,15 +129,17 @@ import {
   db, gate, $, esc, STATUSES, METHODS, TAG_RE, parseInstagram, igUrl, todayStr, fmtDate, nextLine,
   calendarUrl, slugify, tagLink, aggregateViews, ago, loadViewRows, copyText
 } from './assets/common.js';
+import { mountTagList } from './assets/tags.js';
 import {
   doc, collection, onSnapshot, updateDoc, addDoc, setDoc, getDoc, deleteDoc, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const id = new URLSearchParams(location.search).get('id');
 let shop = null, contacts = [], unsubs = [];
-let haveShop = false, haveContacts = false;
-let filled = {details: false, next: false, tag: false};
-let editingId = null, lastSyncKey = '', viewsLoadedFor = null;
+let haveShop = false, haveContacts = false, haveTags = false;
+let tagsAll = {}, viewAgg = null, logOpen = false;
+let filled = {details: false, next: false};
+let editingId = null, lastSyncKey = '';
 
 const shopRef = () => doc(db, 'shops', id);
 const logCol = () => collection(db, 'shops', id, 'contacts');
@@ -158,31 +169,43 @@ function renderDerived(){
       date: shop.nextDate,
       time: shop.nextTime || ''
     });
-    $('calBtn').hidden = false;
+    $('calBtn').hidden = !!shop.calAdded;
   }else{
     $('calBtn').hidden = true;
   }
+  $('calNote').hidden = !(shop.calAdded && shop.calStale && shop.nextDate);
 
-  $('copyLink').disabled = !shop.tag;
 }
 
-/* ---------- views for this tag ---------- */
-async function loadTagViews(){
-  if(!shop || !shop.tag){ $('tagViews').innerHTML = ''; return; }
-  const tag = shop.tag;
+/* ---------- link tags ---------- */
+const tagUI = mountTagList($('tagList'), {
+  empty: 'No tags yet. Save one above.',
+  onSave: async (k, note)=>{
+    try{ await updateDoc(doc(db, 'tags', k), {note}); }
+    catch(ex){ $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + ').'; }
+  },
+  onDelete: async k=>{
+    if(!confirm('Delete "' + k + '"? Views already counted stay in your totals.')) return;
+    try{ await deleteDoc(doc(db, 'tags', k)); }
+    catch(ex){ $('tagErr').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
+  }
+});
+function renderTags(){
+  const mine = Object.keys(tagsAll).filter(k => tagsAll[k].shopId === id).sort();
+  tagUI.render(mine.map(k => ({
+    tag: k, note: tagsAll[k].note || '',
+    views: viewAgg ? (viewAgg.byTag[k] || {count: 0, last: 0}) : null
+  })));
+}
+async function loadViews(){
   try{
-    const agg = aggregateViews(await loadViewRows());
-    const e = agg.byTag[tag] || {count: 0, last: 0};
-    $('tagViews').innerHTML = (e.count ? e.count + (e.count === 1 ? ' view' : ' views') + ', last opened ' + esc(ago(e.last)) : 'Not opened yet') +
-      ' &middot; <a href="#" id="refreshViews">refresh</a>';
-    viewsLoadedFor = tag;
+    viewAgg = aggregateViews(await loadViewRows());
+    renderTags();
   }catch(ex){
-    $('tagViews').innerHTML = '<span class="err">Could not load views (' + esc(ex.code || 'error') + ').</span>';
+    $('tagErr').textContent = 'Could not load views (' + (ex.code || 'error') + ').';
   }
 }
-$('tagViews').addEventListener('click', e=>{
-  if(e.target.id === 'refreshViews'){ e.preventDefault(); loadTagViews(); }
-});
+$('refreshViews').addEventListener('click', e=>{ e.preventDefault(); loadViews(); });
 
 /* ---------- details ---------- */
 $('detailsForm').addEventListener('submit', async e=>{
@@ -195,7 +218,6 @@ $('detailsForm').addEventListener('submit', async e=>{
   $('detailErr').textContent = '';
   try{
     await updateDoc(shopRef(), {name, address, instagram: ig.handle, status: $('fStatus').value, updatedAt: serverTimestamp()});
-    if(shop.tag) await setDoc(doc(db, 'tags', shop.tag), {shopId: id, note: name}, {merge: true});
     $('fIg').value = ig.handle ? '@' + ig.handle : '';
     msg('detailMsg', 'Saved.');
   }catch(ex){
@@ -210,7 +232,11 @@ $('nextForm').addEventListener('submit', async e=>{
   if(nextTime && !nextDate){ $('nextErr').textContent = 'Pick a date to go with that time.'; return; }
   $('nextErr').textContent = '';
   try{
-    await updateDoc(shopRef(), {nextDate, nextTime: nextDate ? nextTime : '', nextText, updatedAt: serverTimestamp()});
+    const t = nextDate ? nextTime : '';
+    const changed = nextDate !== (shop.nextDate || '') || t !== (shop.nextTime || '') || nextText !== (shop.nextText || '');
+    const upd = {nextDate, nextTime: t, nextText, updatedAt: serverTimestamp()};
+    if(changed && shop.calAdded) upd.calStale = true;
+    await updateDoc(shopRef(), upd);
     msg('nextMsg', 'Saved.');
   }catch(ex){
     $('nextErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
@@ -218,31 +244,46 @@ $('nextForm').addEventListener('submit', async e=>{
 });
 $('clearNext').addEventListener('click', async ()=>{
   try{
-    await updateDoc(shopRef(), {nextDate: '', nextTime: '', nextText: '', updatedAt: serverTimestamp()});
+    await updateDoc(shopRef(), {nextDate: '', nextTime: '', nextText: '', calAdded: false, calStale: false, updatedAt: serverTimestamp()});
     $('nDate').value = ''; $('nTime').value = ''; $('nText').value = '';
     msg('nextMsg', 'Cleared.');
   }catch(ex){ $('nextErr').textContent = "That didn't clear (" + (ex.code || 'error') + ').'; }
 });
+$('calBtn').addEventListener('click', ()=>{
+  updateDoc(shopRef(), {calAdded: true, calStale: false}).catch(()=>{});
+});
+$('calDismiss').addEventListener('click', e=>{
+  e.preventDefault();
+  updateDoc(shopRef(), {calStale: false}).catch(()=>{});
+});
+
 /* ---------- contact log ---------- */
-function showLog(){ $('logForm').hidden = false; }
-function hideLog(){ $('logForm').hidden = true; }
+/* The form is open while the log is empty (first contact), otherwise only when asked for. */
+function applyLogUI(){
+  const first = haveContacts && contacts.length === 0;
+  $('logForm').hidden = !(first || logOpen);
+  $('logCancel').hidden = first;
+  $('logBtnRow').hidden = first;
+  $('logToggle').hidden = first;
+  $('logTitle').textContent = first ? 'FIRST CONTACT' : (editingId ? 'EDIT ENTRY' : 'NEW ENTRY');
+  if(!editingId) $('logSave').textContent = first ? 'SAVE FIRST CONTACT' : 'ADD TO LOG';
+}
+function showLog(){ logOpen = true; applyLogUI(); $('logForm').scrollIntoView({behavior: 'smooth', block: 'center'}); }
+function hideLog(){ logOpen = false; applyLogUI(); }
 function resetLogForm(){
   editingId = null;
   $('lDate').value = todayStr();
   $('lMethod').selectedIndex = 0;
   $('lWho').value = ''; $('lNotes').value = '';
-  $('logSave').textContent = 'ADD TO LOG';
   $('logErr').textContent = '';
+  applyLogUI();
 }
-$('logToggle').addEventListener('click', ()=>{
-  if($('logForm').hidden){
-    resetLogForm(); showLog();
-    $('logForm').scrollIntoView({behavior: 'smooth', block: 'nearest'});
-    $('lWho').focus();
-  }else{
-    resetLogForm(); hideLog();
-  }
-});
+function openNewEntry(){
+  if(!$('logForm').hidden && !editingId){ $('lWho').focus(); return; }
+  resetLogForm(); showLog(); $('lWho').focus();
+}
+$('logAdd').addEventListener('click', openNewEntry);
+$('logToggle').addEventListener('click', openNewEntry);
 $('logCancel').addEventListener('click', ()=>{ resetLogForm(); hideLog(); });
 
 $('logForm').addEventListener('submit', async e=>{
@@ -261,9 +302,11 @@ $('logForm').addEventListener('submit', async e=>{
       await updateDoc(doc(db, 'shops', id, 'contacts', editingId), {date, method, who, notes, updatedAt: serverTimestamp()});
     }else{
       await addDoc(logCol(), {date, method, who, notes, createdAt: serverTimestamp()});
+      // a logged contact brings the calendar button back for the next step
+      await updateDoc(shopRef(), {calAdded: false, calStale: false});
     }
     resetLogForm(); hideLog();
-    msg('nextMsg', wasEdit ? 'Log entry updated.' : 'Added to the log.');
+    msg('logMsg', wasEdit ? 'Log entry updated.' : 'Added to the log.');
   }catch(ex){
     $('logErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
   }finally{
@@ -300,13 +343,12 @@ $('logList').addEventListener('click', async e=>{
     $('logSave').textContent = 'SAVE CHANGES';
     $('logErr').textContent = '';
     showLog();
-    $('logForm').scrollIntoView({behavior: 'smooth', block: 'center'});
   }else if(btn.dataset.act === 'del'){
     if(!confirm('Delete this log entry?')) return;
     try{
       await deleteDoc(doc(db, 'shops', id, 'contacts', c.id));
       if(editingId === c.id){ resetLogForm(); hideLog(); }
-    }catch(ex){ $('nextMsg').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
+    }catch(ex){ $('logMsg').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
   }
 });
 
@@ -322,28 +364,21 @@ async function syncLast(){
   try{ await updateDoc(shopRef(), want); }catch(ex){ lastSyncKey = ''; }
 }
 
-/* ---------- tag ---------- */
+/* ---------- add a tag ---------- */
 $('tagForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const slug = slugify($('tagInput').value);
+  const note = $('tagNote').value.trim().slice(0, 80);
   if(!TAG_RE.test(slug)){ $('tagErr').textContent = 'Use letters and numbers, up to 30 characters.'; return; }
-  $('tagInput').value = slug;
-  if(slug === shop.tag){ msg('tagMsg', 'That is already the tag.'); return; }
+  if(tagsAll[slug]){ $('tagErr').textContent = 'That tag is already in use. Try another.'; return; }
   $('tagErr').textContent = '';
   try{
-    const taken = await getDoc(doc(db, 'tags', slug));
-    if(taken.exists() && taken.data().shopId !== id){ $('tagErr').textContent = 'That tag is already in use. Try another.'; return; }
-    const b = writeBatch(db);
-    b.set(doc(db, 'tags', slug), {shopId: id, note: shop.name || '', createdAt: serverTimestamp()});
-    if(shop.tag) b.delete(doc(db, 'tags', shop.tag));
-    b.update(shopRef(), {tag: slug, updatedAt: serverTimestamp()});
-    await b.commit();
-    msg('tagMsg', shop.tag ? 'Saved. Views counted under the old tag stay with the old tag.' : 'Saved.');
+    await setDoc(doc(db, 'tags', slug), {shopId: id, note, createdAt: serverTimestamp()});
+    $('tagInput').value = ''; $('tagNote').value = '';
   }catch(ex){
     $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
   }
 });
-$('copyLink').addEventListener('click', ()=>{ if(shop && shop.tag) copyText(tagLink(shop.tag), $('copyLink')); });
 
 /* ---------- delete ---------- */
 $('delShop').addEventListener('click', async ()=>{
@@ -352,7 +387,7 @@ $('delShop').addEventListener('click', async ()=>{
     unsubs.forEach(u => u()); unsubs = [];
     const b = writeBatch(db);
     contacts.forEach(c => b.delete(doc(db, 'shops', id, 'contacts', c.id)));
-    if(shop.tag) b.delete(doc(db, 'tags', shop.tag));
+    Object.keys(tagsAll).filter(k => tagsAll[k].shopId === id).forEach(k => b.delete(doc(db, 'tags', k)));
     b.delete(shopRef());
     await b.commit();
     location.href = 'tracker.html';
@@ -386,12 +421,7 @@ function start(){
       $('nText').value = shop.nextText || '';
       filled.next = true;
     }
-    if(!filled.tag){
-      $('tagInput').value = shop.tag || '';
-      filled.tag = true;
-    }
     renderDerived();
-    if(shop.tag && viewsLoadedFor !== shop.tag) loadTagViews();
     syncLast();
   }, fail));
   unsubs.push(onSnapshot(logCol(), snap=>{
@@ -403,7 +433,14 @@ function start(){
     });
     haveContacts = true;
     renderLog();
+    applyLogUI();
     syncLast();
+  }, fail));
+  unsubs.push(onSnapshot(collection(db, 'tags'), snap=>{
+    tagsAll = {}; snap.forEach(d => { tagsAll[d.id] = d.data(); });
+    haveTags = true;
+    renderTags();
+    if(!viewAgg) loadViews();
   }, fail));
 }
 
@@ -412,7 +449,7 @@ gate({
   onOut: ()=>{
     unsubs.forEach(u => u()); unsubs = [];
     shop = null; contacts = []; haveShop = haveContacts = false;
-    filled = {details: false, next: false, tag: false}; viewsLoadedFor = null; lastSyncKey = '';
+    filled = {details: false, next: false}; lastSyncKey = ''; tagsAll = {}; viewAgg = null; haveTags = false; logOpen = false;
   }
 });
 </script>

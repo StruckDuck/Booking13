@@ -1,6 +1,6 @@
 /* Firebase setup and admin sign-in shared by tracker.html and shop.html. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { slugify } from './helpers.js';
 
@@ -18,6 +18,7 @@ export const ADMIN_EMAIL = 'joshuarstacy@gmail.com';
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 export const db = getFirestore(app);
 export const $ = id => document.getElementById(id);
 
@@ -25,6 +26,7 @@ export const $ = id => document.getElementById(id);
 export function gate({onIn, onOut}){
   const provider = new GoogleAuthProvider();
   let started = false;
+  $('gate').hidden = true;   // stays hidden until Firebase has checked for a saved sign-in
   $('signin').addEventListener('click', ()=>{
     $('gateMsg').textContent = '';
     signInWithPopup(auth, provider).catch(ex=>{

@@ -24,7 +24,7 @@
     </div>
   </header>
 
-  <div id="gate">
+  <div id="gate" hidden>
     <p class="muted">Private page. Sign in with your Google account.</p>
     <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
     <p class="err" id="gateMsg" role="alert"></p>
@@ -137,7 +137,7 @@ $('addForm').addEventListener('submit', async e=>{
       lastContact: '', lastMethod: '', lastWho: '',
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
-    const tag = await claimTag(name, ref.id, name);
+    const tag = await claimTag(name, ref.id, 'Main link');
     await updateDoc(doc(db, 'shops', ref.id), {tag});
     location.href = 'shop.html?id=' + encodeURIComponent(ref.id);
   }catch(ex){

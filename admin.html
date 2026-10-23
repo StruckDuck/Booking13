@@ -24,7 +24,7 @@
     </div>
   </header>
 
-  <div id="gate">
+  <div id="gate" hidden>
     <p class="muted">Private page. Sign in with your Google account.</p>
     <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
     <p class="err" id="gateMsg" role="alert"></p>
@@ -45,9 +45,12 @@
 
     <section>
       <h2><small>LINKS</small>Tagged links</h2>
-      <form id="tagForm" class="tagbar" novalidate>
-        <input id="tagIn" autocomplete="off" autocapitalize="off" placeholder="New tag, like insta" aria-label="New tag">
-        <button class="solid small" type="submit">SAVE</button>
+      <form id="tagForm" class="tagform" novalidate>
+        <div class="row2">
+          <input id="tagIn" autocomplete="off" autocapitalize="off" placeholder="Tag, like insta" aria-label="New tag">
+          <input id="tagNote" autocomplete="off" maxlength="80" placeholder="Descriptor, like Instagram bio" aria-label="Descriptor">
+        </div>
+        <div><button class="solid small" type="submit">SAVE TAG</button></div>
       </form>
       <p class="err" id="tagErr" role="alert" style="margin-top:6px"></p>
       <div id="tagList"></div>
@@ -66,10 +69,11 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, getDocs, query, where, writeBatch, deleteDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 import { slugify, TAG_RE, tagLink, aggregateViews, copyText } from './assets/helpers.js';
+import { mountTagList } from './assets/tags.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKWEE1hTCYi2OJIu728l3OTW4f8WKbmOY",
@@ -92,6 +96,7 @@ const SLOTS = [
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -249,25 +254,31 @@ function stopListening(){
 setInterval(render, 30000);
 
 /* ---------- saved tags ---------- */
+const tagUI = mountTagList($('tagList'), {
+  onSave: async (k, note)=>{
+    try{ await updateDoc(doc(db,'tags',k), {note}); }
+    catch(ex){ $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + ').'; }
+  },
+  onDelete: async k=>{
+    if(!confirm('Delete "' + k + '"? Views already counted stay in your totals.')) return;
+    try{ await deleteDoc(doc(db,'tags',k)); }
+    catch(ex){ $('tagErr').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
+  }
+});
+
 function renderTags(){
   const agg = aggregateViews(viewRows);
   const ids = Object.keys(tags).sort((a,b)=>{
     const sa = tags[a].shopId ? 1 : 0, sb = tags[b].shopId ? 1 : 0;
     return (sa - sb) || a.localeCompare(b);
   });
-  $('tagList').innerHTML = ids.length ? ids.map(k=>{
-    const isShop = !!tags[k].shopId;
-    return '<div class="tagchip"><span class="name">' + esc(k) + '</span><span class="btns">' +
-      '<button class="solid small" data-tact="copy" data-tag="' + esc(k) + '" type="button">COPY</button>' +
-      (isShop ? '' : '<button class="quiet small" data-tact="del" data-tag="' + esc(k) + '" type="button" aria-label="Delete ' + esc(k) + '">&times;</button>') +
-      '</span></div>';
-  }).join('') : '<p class="muted"><i>No saved tags yet.</i></p>';
+  tagUI.render(ids.map(k=>({tag: k, note: tags[k].note || '', views: viewsLoaded ? (agg.byTag[k] || {count: 0, last: 0}) : null})));
 
   const seen = viewsLoaded ? Object.keys(agg.byTag).filter(k=>!tags[k] && TAG_RE.test(k)).sort() : [];
   $('tagSeen').innerHTML = seen.length
     ? '<div class="subhead">SEEN BUT NOT SAVED</div>' + seen.map(k=>
-        '<div class="tagchip"><span class="name">' + esc(k) + '</span><span class="btns">' +
-        '<button class="quiet small" data-tact="save" data-tag="' + esc(k) + '" type="button">SAVE</button></span></div>').join('')
+        '<div class="tagitem"><div class="tl1"><span class="name">' + esc(k) + '</span><span class="btns">' +
+        '<button class="quiet xs" data-tact="save" data-tag="' + esc(k) + '" type="button">SAVE</button></span></div></div>').join('')
     : '';
 }
 
@@ -275,26 +286,15 @@ $('tagForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const err = $('tagErr');
   const slug = slugify($('tagIn').value);
+  const note = $('tagNote').value.trim().slice(0, 80);
   if(!TAG_RE.test(slug)){ err.textContent = 'Use letters and numbers, up to 30 characters.'; return; }
-  if(tags[slug]){ err.textContent = tags[slug].shopId ? 'That tag belongs to a shop. Pick another.' : 'Already saved.'; return; }
+  if(tags[slug]){ err.textContent = 'That tag is already in the list.'; return; }
   err.textContent = '';
   try{
-    await setDoc(doc(db,'tags',slug), {note: '', createdAt: serverTimestamp()});
-    $('tagIn').value = '';
+    await setDoc(doc(db,'tags',slug), {note, createdAt: serverTimestamp()});
+    $('tagIn').value = ''; $('tagNote').value = '';
   }catch(ex){
     err.textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
-  }
-});
-
-$('tagList').addEventListener('click', async e=>{
-  const btn = e.target.closest('button[data-tact]');
-  if(!btn) return;
-  const k = btn.dataset.tag;
-  if(btn.dataset.tact === 'copy'){ copyText(tagLink(k), btn); return; }
-  if(btn.dataset.tact === 'del'){
-    if(!confirm('Remove "' + k + '" from your list? Views already counted stay in your totals.')) return;
-    try{ await deleteDoc(doc(db,'tags',k)); }
-    catch(ex){ $('tagErr').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
   }
 });
 $('tagSeen').addEventListener('click', async e=>{
