@@ -303,7 +303,12 @@ $('logForm').addEventListener('submit', async e=>{
     }else{
       await addDoc(logCol(), {date, method, who, notes, createdAt: serverTimestamp()});
       // a logged contact brings the calendar button back for the next step
-      await updateDoc(shopRef(), {calAdded: false, calStale: false});
+      const upd = {calAdded: false, calStale: false};
+      // the first logged contact moves a "Not contacted" shop to "Contacted"
+      const bumped = shop.status === 'Not contacted' || !STATUSES.includes(shop.status);
+      if(bumped) upd.status = 'Contacted';
+      await updateDoc(shopRef(), upd);
+      if(bumped) $('fStatus').value = 'Contacted';
     }
     resetLogForm(); hideLog();
     msg('logMsg', wasEdit ? 'Log entry updated.' : 'Added to the log.');
