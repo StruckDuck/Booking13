@@ -51,6 +51,10 @@
         <label>Note (optional)<input id="tagNote" autocomplete="off" placeholder="Instagram bio"></label>
         <button class="solid" type="submit">SAVE TAG</button>
       </form>
+      <div class="copyrow">
+        <input id="tagPreview" readonly aria-label="Full link with tag" placeholder="Type a tag to see the full link">
+        <button class="solid" id="tagCopy" type="button">COPY</button>
+      </div>
       <p class="err" id="tagErr" role="alert"></p>
       <div id="tagList"></div>
       <div id="tagSeen"></div>
@@ -284,6 +288,18 @@ function renderTags(){
     : '';
 }
 
+function updatePreview(){
+  const slug = slugify($('tagIn').value);
+  $('tagPreview').value = TAG_RE.test(slug) ? tagLink(slug) : '';
+}
+$('tagIn').addEventListener('input', updatePreview);
+$('tagCopy').addEventListener('click', ()=>{
+  const v = $('tagPreview').value;
+  if(!v){ $('tagErr').textContent = 'Type a tag first.'; return; }
+  $('tagErr').textContent = '';
+  copyText(v, $('tagCopy'));
+});
+
 $('tagForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const err = $('tagErr');
@@ -295,7 +311,7 @@ $('tagForm').addEventListener('submit', async e=>{
   try{
     if(tags[slug]) await updateDoc(doc(db,'tags',slug), {note});
     else await setDoc(doc(db,'tags',slug), {note, createdAt: serverTimestamp()});
-    $('tagIn').value = ''; $('tagNote').value = '';
+    $('tagIn').value = ''; $('tagNote').value = ''; updatePreview();
   }catch(ex){
     err.textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
   }
