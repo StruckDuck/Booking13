@@ -8,62 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#141210; --oak:#221C14; --litho:#C05020; --faded:#304050; --parch:#C8B090; --foxed:#EDE0C0;
-    --rule:rgba(200,176,144,.28);
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--ink);color:var(--foxed);font-family:'Crimson Pro',Georgia,serif;font-size:18px;line-height:1.5}
-  .wrap{max-width:720px;margin:0 auto;padding:0 18px 80px}
-  h1,h2,h3{font-family:'IM Fell English',Georgia,serif;font-weight:400;margin:0;line-height:1.15}
-  .sc{font-family:'IM Fell English SC',Georgia,serif;letter-spacing:.12em}
-  a{color:var(--litho)}
-  p{margin:0 0 10px}
-  .muted{color:var(--parch)}
-  header{padding:28px 0 8px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:3px double var(--rule)}
-  header h1{font-size:30px}
-  header .who{font-size:14px;color:var(--parch)}
-  section{padding:24px 0 4px}
-  h2{font-size:24px;margin-bottom:12px}
-  h2 small{display:block;font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.2em;color:var(--litho);margin-bottom:4px}
-
-  button{font-family:'IM Fell English SC',serif;letter-spacing:.12em;font-size:14px;cursor:pointer;padding:12px 16px;border:1px solid var(--litho);background:transparent;color:var(--foxed)}
-  button:hover{background:var(--litho);color:var(--ink)}
-  button.solid{background:var(--litho);color:var(--ink)}
-  a.btn{display:inline-block;text-decoration:none;font-family:'IM Fell English SC',serif;letter-spacing:.12em;font-size:14px;padding:12px 16px;border:1px solid var(--litho);background:transparent;color:var(--foxed)}
-  a.btn.solid{background:var(--litho);color:var(--ink)}
-  a.btn:hover{background:var(--foxed);color:var(--ink)}
-  button.solid:hover{background:var(--foxed)}
-  button.quiet{border-color:var(--rule);color:var(--parch)}
-  button:disabled{opacity:.5;cursor:wait}
-
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-  .tile{border:1px solid var(--rule);background:var(--oak);padding:12px 14px}
-  .tile b{display:block;font-family:'IM Fell English',serif;font-weight:400;font-size:30px;line-height:1.1}
-  .tile span{font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.14em;color:var(--parch)}
-
-  .card{border:1px solid var(--rule);background:var(--oak);padding:16px;margin-bottom:12px}
-  .card.booked{border-color:var(--faded)}
-  .card.released{opacity:.6}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-  .card h3{font-size:24px}
-  .pill{font-family:'IM Fell English SC',serif;font-size:12px;letter-spacing:.14em;padding:4px 10px;border:1px solid var(--parch);color:var(--parch);white-space:nowrap}
-  .pill.pending{border-color:var(--litho);color:var(--litho)}
-  .pill.booked{background:var(--faded);border-color:var(--faded);color:var(--foxed)}
-  .times p{margin:6px 0 0;font-family:'IM Fell English',serif;font-size:20px}
-  .meta{margin:10px 0 0;font-size:16px;color:var(--parch)}
-  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-
-  table{width:100%;border-collapse:collapse;font-size:16px;margin-top:8px}
-  th,td{text-align:left;padding:7px 4px;border-top:1px solid var(--rule)}
-  th{font-family:'IM Fell English SC',serif;font-weight:400;font-size:12px;letter-spacing:.14em;color:var(--parch);border-top:0}
-  td:last-child,th:last-child{text-align:right}
-
-  #gate{margin-top:40px;border:1px solid var(--rule);background:var(--oak);padding:24px;text-align:center}
-  .err{color:#f0a070;min-height:1.2em;margin:12px 0 0;font-size:16px}
-  [hidden]{display:none!important}
-</style>
+<link rel="stylesheet" href="assets/admin.css">
 </head>
 <body>
 <div class="wrap">
@@ -72,6 +17,7 @@
     <div>
       <div class="sc muted" style="font-size:12px">JOSHUA STACY UP CLOSE</div>
       <h1>Friday the 13th admin</h1>
+      <nav class="nav"><a href="admin.html" class="on">Admin</a><a href="tracker.html">Shop tracker</a></nav>
     </div>
     <div class="who" id="who" hidden>
       <span id="email"></span> &middot; <a href="#" id="signout">Sign out</a>
@@ -98,6 +44,19 @@
     </section>
 
     <section>
+      <h2><small>LINKS</small>Tagged links</h2>
+      <p class="muted" style="font-size:16px">Save a tag for each place you share the link. Anyone who opens it with that tag on the end is counted under it.</p>
+      <form id="tagForm" class="taginline" novalidate>
+        <label>Tag<input id="tagIn" autocomplete="off" autocapitalize="off" placeholder="insta"></label>
+        <label>Note (optional)<input id="tagNote" autocomplete="off" placeholder="Instagram bio"></label>
+        <button class="solid" type="submit">SAVE TAG</button>
+      </form>
+      <p class="err" id="tagErr" role="alert"></p>
+      <div id="tagList"></div>
+      <div id="tagSeen"></div>
+    </section>
+
+    <section>
       <h2><small>VIEWS</small>Who looked at the page</h2>
       <div class="tiles" id="viewTiles"></div>
       <div id="viewTable"></div>
@@ -110,7 +69,9 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, getDocs, query, where, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, getDocs, query, where, writeBatch, deleteDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+import { slugify, TAG_RE, tagLink, aggregateViews, copyText } from './assets/helpers.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKWEE1hTCYi2OJIu728l3OTW4f8WKbmOY",
@@ -159,6 +120,7 @@ function left(t){
 }
 
 let slotMap = {}, claims = [], unsubs = [], haveSlots = false, haveClaims = false;
+let tags = {}, viewRows = [], viewsLoaded = false;
 
 function runsFor(ids){
   const set = new Set(ids);
@@ -277,18 +239,98 @@ function startListening(){
     claims = snap.docs.map(d=>({id:d.id, ...d.data()}));
     haveClaims = true; render();
   }, fail));
+  unsubs.push(onSnapshot(collection(db,'tags'), snap=>{
+    tags = {}; snap.forEach(d=>{ tags[d.id] = d.data(); });
+    renderTags();
+  }, fail));
 }
 function stopListening(){
   unsubs.forEach(u=>u()); unsubs = [];
-  haveSlots = haveClaims = false; slotMap = {}; claims = [];
+  haveSlots = haveClaims = false; slotMap = {}; claims = []; tags = {}; viewRows = []; viewsLoaded = false;
 }
 setInterval(render, 30000);
+
+/* ---------- saved tags ---------- */
+function renderTags(){
+  const agg = aggregateViews(viewRows);
+  const ids = Object.keys(tags).sort((a,b)=>{
+    const sa = tags[a].shopId ? 1 : 0, sb = tags[b].shopId ? 1 : 0;
+    return (sa - sb) || a.localeCompare(b);
+  });
+  const viewsText = k => {
+    if(!viewsLoaded) return 'Loading views...';
+    const e = agg.byTag[k];
+    return e ? e.count + (e.count === 1 ? ' view' : ' views') + ', last opened ' + ago(e.last) : 'Not opened yet';
+  };
+  $('tagList').innerHTML = ids.length ? ids.map(k=>{
+    const t = tags[k], isShop = !!t.shopId;
+    return '<div class="tagrow"><div class="top"><span class="name">' + esc(k) + '</span>' + (isShop ? '<span class="pill">SHOP</span>' : '') + '</div>' +
+      (isShop
+        ? '<p class="meta" style="margin-top:4px"><a href="shop.html?id=' + encodeURIComponent(t.shopId) + '">' + esc(t.note || 'Open shop') + '</a></p>'
+        : '<input class="noteedit" data-tag="' + esc(k) + '" value="' + esc(t.note || '') + '" placeholder="Add a note" aria-label="Note for ' + esc(k) + '">') +
+      '<p class="taglink">' + esc(tagLink(k)) + '</p>' +
+      '<p class="meta">' + esc(viewsText(k)) + '</p>' +
+      '<div class="acts"><button class="solid small" data-tact="copy" data-tag="' + esc(k) + '" type="button">COPY LINK</button>' +
+      (isShop ? '' : '<button class="quiet small" data-tact="del" data-tag="' + esc(k) + '" type="button">DELETE</button>') +
+      '</div></div>';
+  }).join('') : '<p class="muted"><i>No saved tags yet.</i></p>';
+
+  const seen = viewsLoaded ? Object.keys(agg.byTag).filter(k=>!tags[k]).sort((a,b)=>agg.byTag[b].count - agg.byTag[a].count) : [];
+  $('tagSeen').innerHTML = seen.length
+    ? '<div class="subhead">SEEN BUT NOT SAVED</div>' + seen.map(k=>
+        '<div class="tagrow"><div class="top"><span class="name">' + esc(k) + '</span>' +
+        (TAG_RE.test(k) ? '<button class="quiet small" data-tact="save" data-tag="' + esc(k) + '" type="button">SAVE TAG</button>' : '') + '</div>' +
+        '<p class="meta">' + esc(viewsText(k)) + (TAG_RE.test(k) ? '' : ' (this one can\'t be saved)') + '</p></div>').join('')
+    : '';
+}
+
+$('tagForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const err = $('tagErr');
+  const slug = slugify($('tagIn').value);
+  const note = $('tagNote').value.trim().slice(0, 80);
+  if(!TAG_RE.test(slug)){ err.textContent = 'Use letters and numbers, up to 30 characters.'; return; }
+  if(tags[slug] && tags[slug].shopId){ err.textContent = 'That tag belongs to a shop. Pick another.'; return; }
+  err.textContent = '';
+  try{
+    if(tags[slug]) await updateDoc(doc(db,'tags',slug), {note});
+    else await setDoc(doc(db,'tags',slug), {note, createdAt: serverTimestamp()});
+    $('tagIn').value = ''; $('tagNote').value = '';
+  }catch(ex){
+    err.textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
+  }
+});
+
+$('tagList').addEventListener('click', async e=>{
+  const btn = e.target.closest('button[data-tact]');
+  if(!btn) return;
+  const k = btn.dataset.tag;
+  if(btn.dataset.tact === 'copy'){ copyText(tagLink(k), btn); return; }
+  if(btn.dataset.tact === 'del'){
+    if(!confirm('Remove "' + k + '" from your list? Views already counted stay in your totals.')) return;
+    try{ await deleteDoc(doc(db,'tags',k)); }
+    catch(ex){ $('tagErr').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
+  }
+});
+$('tagList').addEventListener('change', async e=>{
+  const inp = e.target.closest('input.noteedit');
+  if(!inp) return;
+  try{ await updateDoc(doc(db,'tags',inp.dataset.tag), {note: inp.value.trim().slice(0, 80)}); }
+  catch(ex){ $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + ').'; }
+});
+$('tagSeen').addEventListener('click', async e=>{
+  const btn = e.target.closest('button[data-tact="save"]');
+  if(!btn) return;
+  try{ await setDoc(doc(db,'tags',btn.dataset.tag), {note: '', createdAt: serverTimestamp()}); }
+  catch(ex){ $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + ').'; }
+});
 
 /* ---------- views ---------- */
 async function loadViews(){
   try{
     const snap = await getDocs(query(collection(db,'visits'), where('page','==','friday13')));
     const rows = snap.docs.map(d=>d.data()).map(d=>({at: ms(d.at), src: d.src || '', ref: d.referrer || ''})).sort((a,b)=>b.at - a.at);
+    viewRows = rows; viewsLoaded = true; renderTags();
     const now = new Date();
     const today = rows.filter(r=>r.at && new Date(r.at).toDateString() === now.toDateString()).length;
     const week = rows.filter(r=>r.at && Date.now() - r.at < 7*24*3600*1000).length;

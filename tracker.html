@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Shop tracker | Friday the 13th</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="sc muted" style="font-size:12px">JOSHUA STACY UP CLOSE</div>
+      <h1>Shop tracker</h1>
+      <nav class="nav"><a href="admin.html">Admin</a><a href="tracker.html" class="on">Shop tracker</a></nav>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="email"></span> &middot; <a href="#" id="signout">Sign out</a>
+    </div>
+  </header>
+
+  <div id="gate">
+    <p class="muted">Private page. Sign in with your Google account.</p>
+    <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
+    <p class="err" id="gateMsg" role="alert"></p>
+  </div>
+
+  <div id="app" hidden>
+
+    <section>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section>
+      <details id="addBox">
+        <summary>ADD A SHOP</summary>
+        <form id="addForm" class="stack" novalidate>
+          <label>Shop name<input id="aName" autocomplete="off"></label>
+          <label>Address<input id="aAddr" autocomplete="off"></label>
+          <label>Instagram (handle or link)<input id="aIg" autocomplete="off" autocapitalize="off" placeholder="@beelinetattoo"></label>
+          <p class="err" id="aErr" role="alert"></p>
+          <button class="solid" id="aSave" type="submit">SAVE AND OPEN</button>
+        </form>
+      </details>
+    </section>
+
+    <p class="err" id="dataErr" role="alert"></p>
+    <div id="groups"></div>
+
+  </div>
+</div>
+
+<script type="module">
+import { db, gate, $, esc, STATUSES, parseInstagram, igUrl, todayStr, fmtDate, nextLine, groupShops, slugify, claimTag } from './assets/common.js';
+import { collection, doc, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+let shops = [];
+let unsub = null;
+
+const GROUPS = [
+  ['overdue', 'Overdue', true],
+  ['today', 'Today', false],
+  ['week', 'Next 7 days', false],
+  ['later', 'Later', false],
+  ['none', 'No next step set', false]
+];
+
+function card(s, today){
+  const status = STATUSES.includes(s.status) ? s.status : 'Contacted';
+  const late = s.nextDate && s.nextDate < today && status !== 'Booked' && status !== 'Passed';
+  const nl = nextLine(s);
+  const last = s.lastContact
+    ? 'Last contact: ' + fmtDate(s.lastContact) + (s.lastMethod ? ', ' + s.lastMethod.toLowerCase() : '') + (s.lastWho ? ' with ' + s.lastWho : '')
+    : 'No contact logged yet';
+  return '<div class="shopcard" data-id="' + esc(s.id) + '">' +
+    '<div class="top"><h3><a href="shop.html?id=' + encodeURIComponent(s.id) + '">' + esc(s.name || 'Untitled shop') + '</a>' +
+    '</h3><span class="pill st-' + slugify(status) + '">' + esc(status.toUpperCase()) + '</span></div>' +
+    (s.address ? '<p class="meta">' + esc(s.address) + '</p>' : '') +
+    (nl ? '<p class="next' + (late ? ' late' : '') + '">' + esc(nl) + '</p>' : '') +
+    '<p class="meta">' + esc(last) + '</p>' +
+    (s.instagram ? '<div class="acts"><a class="btn small" href="' + esc(igUrl(s.instagram)) + '" target="_blank" rel="noopener">INSTAGRAM</a></div>' : '') +
+    '</div>';
+}
+
+const tile = (v, l) => '<div class="tile"><b>' + v + '</b><span>' + esc(l.toUpperCase()) + '</span></div>';
+
+function render(){
+  const today = todayStr();
+  const g = groupShops(shops, today);
+  const count = st => shops.filter(s => (STATUSES.includes(s.status) ? s.status : 'Contacted') === st).length;
+  $('tiles').innerHTML = tile(g.overdue.length + g.today.length, 'Due now') +
+    STATUSES.map(st => tile(count(st), st)).join('');
+
+  if(!shops.length){
+    $('groups').innerHTML = '<p class="muted" style="margin-top:24px"><i>No shops yet. Add the ones you have already visited.</i></p>';
+    return;
+  }
+  let html = '';
+  GROUPS.forEach(([key, label, late])=>{
+    if(!g[key].length) return;
+    html += '<div class="gtitle' + (late ? ' late' : '') + '"><span>' + esc(label.toUpperCase()) + '</span><span>' + g[key].length + '</span></div>' +
+      g[key].map(s => card(s, today)).join('');
+  });
+  if(g.closed.length){
+    html += '<details class="closed" style="margin-top:24px"><summary>BOOKED AND PASSED (' + g.closed.length + ')</summary><div style="margin-top:12px">' +
+      g.closed.map(s => card(s, today)).join('') + '</div></details>';
+  }
+  $('groups').innerHTML = html;
+}
+
+$('groups').addEventListener('click', e=>{
+  if(e.target.closest('a, button, summary')) return;
+  const c = e.target.closest('.shopcard');
+  if(c) location.href = 'shop.html?id=' + encodeURIComponent(c.dataset.id);
+});
+
+$('addForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const err = $('aErr');
+  const name = $('aName').value.trim();
+  const address = $('aAddr').value.trim();
+  if(!name){ err.textContent = 'Enter the shop name.'; return; }
+  const ig = parseInstagram($('aIg').value);
+  if(ig.error){ err.textContent = ig.error; return; }
+  err.textContent = '';
+  const btn = $('aSave');
+  btn.disabled = true;
+  try{
+    const ref = await addDoc(collection(db, 'shops'), {
+      name, address, instagram: ig.handle, status: 'Contacted', tag: '',
+      nextDate: '', nextTime: '', nextText: '',
+      lastContact: '', lastMethod: '', lastWho: '',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    const tag = await claimTag(name, ref.id, name);
+    await updateDoc(doc(db, 'shops', ref.id), {tag});
+    location.href = 'shop.html?id=' + encodeURIComponent(ref.id);
+  }catch(ex){
+    err.textContent = "Couldn't save that shop (" + (ex.code || 'error') + '). Try again.';
+    btn.disabled = false;
+  }
+});
+
+gate({
+  onIn: ()=>{
+    unsub = onSnapshot(collection(db, 'shops'), snap=>{
+      $('dataErr').textContent = '';
+      shops = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      render();
+    }, ex=>{ $('dataErr').textContent = 'Could not load shops (' + (ex.code || 'error') + ').'; });
+  },
+  onOut: ()=>{
+    if(unsub) unsub();
+    unsub = null; shops = [];
+  }
+});
+setInterval(()=>{ if(unsub) render(); }, 60000);
+</script>
+</body>
+</html>

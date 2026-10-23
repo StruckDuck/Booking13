@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Shop | Friday the 13th</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="sc muted" style="font-size:12px">JOSHUA STACY UP CLOSE</div>
+      <h1 id="title">Shop</h1>
+      <nav class="nav"><a href="admin.html">Admin</a><a href="tracker.html" class="on">Shop tracker</a></nav>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="email"></span> &middot; <a href="#" id="signout">Sign out</a>
+    </div>
+  </header>
+
+  <div id="gate">
+    <p class="muted">Private page. Sign in with your Google account.</p>
+    <button class="solid" id="signin" type="button">SIGN IN WITH GOOGLE</button>
+    <p class="err" id="gateMsg" role="alert"></p>
+  </div>
+
+  <div id="app" hidden>
+    <p class="err" id="pageErr" role="alert"></p>
+
+    <div id="missing" hidden>
+      <section>
+        <p class="muted">That shop wasn't found.</p>
+        <a class="btn" href="tracker.html">BACK TO SHOPS</a>
+      </section>
+    </div>
+
+    <div id="shopBody" hidden>
+      <p style="margin-top:18px"><a href="tracker.html">&larr; All shops</a></p>
+
+      <section>
+        <h2><small>THE SHOP</small>Details</h2>
+        <form id="detailsForm" class="stack" novalidate>
+          <label>Shop name<input id="fName" autocomplete="off"></label>
+          <label>Address<input id="fAddr" autocomplete="off"></label>
+          <label>Instagram (handle or link)<input id="fIg" autocomplete="off" autocapitalize="off" placeholder="@beelinetattoo"></label>
+          <label>Status<select id="fStatus"></select></label>
+          <p class="err" id="detailErr" role="alert"></p>
+          <div class="acts" style="margin-top:0"><button class="solid" type="submit">SAVE DETAILS</button></div>
+        </form>
+        <p class="ok" id="detailMsg"></p>
+        <div id="igWrap"></div>
+      </section>
+
+      <section>
+        <h2><small>NEXT STEP</small>What's next</h2>
+        <p class="next" id="nextSummary"></p>
+        <form id="nextForm" class="stack" novalidate>
+          <div class="row2">
+            <label>Date<input type="date" id="nDate"></label>
+            <label>Time (optional)<input type="time" id="nTime"></label>
+          </div>
+          <label>What you'll do<input id="nText" autocomplete="off" placeholder="Text Dana about the 2 to 4 pm slots"></label>
+          <p class="err" id="nextErr" role="alert"></p>
+          <div class="acts" style="margin-top:0">
+            <button class="solid" type="submit">SAVE NEXT STEP</button>
+            <a class="btn" id="calBtn" target="_blank" rel="noopener" hidden>ADD TO GOOGLE CALENDAR</a>
+            <button class="quiet" id="doneBtn" type="button">DONE</button>
+            <button class="quiet" id="clearNext" type="button">CLEAR</button>
+          </div>
+        </form>
+        <p class="ok" id="nextMsg"></p>
+      </section>
+
+      <section id="logCard">
+        <h2><small>CONTACT LOG</small>Who you've talked to</h2>
+        <div class="banner" id="finishNote" hidden>
+          Log this contact. When you save it, the next step clears and you can set a new one.
+          <a href="#" id="cancelFinish">Cancel</a>
+        </div>
+        <form id="logForm" class="stack" novalidate>
+          <div class="row2">
+            <label>Date<input type="date" id="lDate"></label>
+            <label>Method<select id="lMethod"></select></label>
+          </div>
+          <label>Who you talked to<input id="lWho" autocomplete="off"></label>
+          <label>General notes<textarea id="lNotes"></textarea></label>
+          <p class="err" id="logErr" role="alert"></p>
+          <div class="acts" style="margin-top:0">
+            <button class="solid" id="logSave" type="submit">ADD TO LOG</button>
+            <button class="quiet" id="logCancel" type="button" hidden>CANCEL EDIT</button>
+          </div>
+        </form>
+        <div id="logList" style="margin-top:18px"></div>
+      </section>
+
+      <section>
+        <h2><small>TRACKING</small>Link and views</h2>
+        <form id="tagForm" class="stack" novalidate style="margin-top:0">
+          <label>Tag<input id="tagInput" autocomplete="off" autocapitalize="off"></label>
+          <p class="err" id="tagErr" role="alert"></p>
+          <div class="acts" style="margin-top:0"><button class="solid" type="submit">SAVE TAG</button></div>
+        </form>
+        <div class="copyrow">
+          <input id="linkOut" readonly aria-label="Tagged link">
+          <button id="copyLink" type="button">COPY</button>
+        </div>
+        <div class="tiles" id="tagViews" style="margin-top:14px"></div>
+        <div class="acts"><button class="quiet" id="refreshViews" type="button">REFRESH VIEWS</button></div>
+        <p class="ok" id="tagMsg"></p>
+      </section>
+
+      <section>
+        <button class="danger quiet" id="delShop" type="button">DELETE THIS SHOP</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  db, gate, $, esc, STATUSES, METHODS, TAG_RE, parseInstagram, igUrl, todayStr, fmtDate, nextLine,
+  calendarUrl, slugify, tagLink, aggregateViews, ago, loadViewRows, copyText
+} from './assets/common.js';
+import {
+  doc, collection, onSnapshot, updateDoc, addDoc, setDoc, getDoc, deleteDoc, writeBatch, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const id = new URLSearchParams(location.search).get('id');
+let shop = null, contacts = [], unsubs = [];
+let haveShop = false, haveContacts = false;
+let filled = {details: false, next: false, tag: false};
+let editingId = null, finishing = false, lastSyncKey = '', viewsLoadedFor = null;
+
+const shopRef = () => doc(db, 'shops', id);
+const logCol = () => collection(db, 'shops', id, 'contacts');
+const msg = (el, text) => { $(el).textContent = text; if(text) setTimeout(()=>{ if($(el).textContent === text) $(el).textContent = ''; }, 3500); };
+
+$('fStatus').innerHTML = STATUSES.map(s => '<option>' + esc(s) + '</option>').join('');
+$('lMethod').innerHTML = METHODS.map(s => '<option>' + esc(s) + '</option>').join('');
+resetLogForm();
+
+/* ---------- derived display ---------- */
+function renderDerived(){
+  const ig = shop.instagram
+    ? '<a class="btn solid" href="' + esc(igUrl(shop.instagram)) + '" target="_blank" rel="noopener">OPEN @' + esc(shop.instagram.toUpperCase()) + ' ON INSTAGRAM</a>'
+    : '<p class="muted" style="font-size:15px"><i>Add an Instagram handle and save to get a button here.</i></p>';
+  $('igWrap').innerHTML = '<div class="acts">' + ig + '</div>';
+
+  const nl = nextLine(shop);
+  const late = shop.nextDate && shop.nextDate < todayStr() && shop.status !== 'Booked' && shop.status !== 'Passed';
+  $('nextSummary').textContent = nl || 'No next step set.';
+  $('nextSummary').className = 'next' + (late ? ' late' : '');
+
+  if(shop.nextDate){
+    $('calBtn').href = calendarUrl({
+      title: (shop.name || 'Shop') + ': ' + (shop.nextText || 'follow up'),
+      details: 'Follow up with ' + (shop.name || 'this shop') + '.\n' + (shop.nextText || '') + '\nTracker: ' + location.href,
+      location: shop.address || '',
+      date: shop.nextDate,
+      time: shop.nextTime || ''
+    });
+    $('calBtn').hidden = false;
+  }else{
+    $('calBtn').hidden = true;
+  }
+
+  $('linkOut').value = shop.tag ? tagLink(shop.tag) : '';
+  $('copyLink').disabled = !shop.tag;
+}
+
+/* ---------- views for this tag ---------- */
+async function loadTagViews(){
+  if(!shop || !shop.tag){ $('tagViews').innerHTML = ''; return; }
+  const tag = shop.tag;
+  try{
+    const agg = aggregateViews(await loadViewRows());
+    const e = agg.byTag[tag] || {count: 0, last: 0};
+    $('tagViews').innerHTML =
+      '<div class="tile"><b>' + e.count + '</b><span>VIEWS</span></div>' +
+      '<div class="tile"><b style="font-size:22px">' + esc(e.count ? ago(e.last) : 'not yet') + '</b><span>LAST OPENED</span></div>';
+    viewsLoadedFor = tag;
+  }catch(ex){
+    $('tagViews').innerHTML = '<p class="err">Could not load views (' + esc(ex.code || 'error') + ').</p>';
+  }
+}
+$('refreshViews').addEventListener('click', loadTagViews);
+
+/* ---------- details ---------- */
+$('detailsForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = $('fName').value.trim();
+  const address = $('fAddr').value.trim();
+  if(!name){ $('detailErr').textContent = 'Enter the shop name.'; return; }
+  const ig = parseInstagram($('fIg').value);
+  if(ig.error){ $('detailErr').textContent = ig.error; return; }
+  $('detailErr').textContent = '';
+  try{
+    await updateDoc(shopRef(), {name, address, instagram: ig.handle, status: $('fStatus').value, updatedAt: serverTimestamp()});
+    if(shop.tag) await setDoc(doc(db, 'tags', shop.tag), {shopId: id, note: name}, {merge: true});
+    $('fIg').value = ig.handle ? '@' + ig.handle : '';
+    msg('detailMsg', 'Saved.');
+  }catch(ex){
+    $('detailErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
+  }
+});
+
+/* ---------- next step ---------- */
+$('nextForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const nextDate = $('nDate').value, nextTime = $('nTime').value, nextText = $('nText').value.trim();
+  if(nextTime && !nextDate){ $('nextErr').textContent = 'Pick a date to go with that time.'; return; }
+  $('nextErr').textContent = '';
+  try{
+    await updateDoc(shopRef(), {nextDate, nextTime: nextDate ? nextTime : '', nextText, updatedAt: serverTimestamp()});
+    msg('nextMsg', 'Saved.');
+  }catch(ex){
+    $('nextErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
+  }
+});
+$('clearNext').addEventListener('click', async ()=>{
+  try{
+    await updateDoc(shopRef(), {nextDate: '', nextTime: '', nextText: '', updatedAt: serverTimestamp()});
+    $('nDate').value = ''; $('nTime').value = ''; $('nText').value = '';
+    msg('nextMsg', 'Cleared.');
+  }catch(ex){ $('nextErr').textContent = "That didn't clear (" + (ex.code || 'error') + ').'; }
+});
+$('doneBtn').addEventListener('click', ()=>{
+  if(!shop.nextDate && !shop.nextText){ msg('nextMsg', 'There is no next step to finish.'); return; }
+  finishing = true;
+  if(!editingId){
+    resetLogForm();
+    $('lNotes').value = 'Done: ' + (shop.nextText || 'next step');
+  }
+  $('finishNote').hidden = false;
+  $('logCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  $('lWho').focus();
+});
+$('cancelFinish').addEventListener('click', e=>{
+  e.preventDefault();
+  finishing = false; $('finishNote').hidden = true;
+});
+
+/* ---------- contact log ---------- */
+function resetLogForm(){
+  editingId = null;
+  $('lDate').value = todayStr();
+  $('lMethod').selectedIndex = 0;
+  $('lWho').value = ''; $('lNotes').value = '';
+  $('logSave').textContent = 'ADD TO LOG';
+  $('logCancel').hidden = true;
+  $('logErr').textContent = '';
+}
+$('logCancel').addEventListener('click', resetLogForm);
+
+$('logForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const date = $('lDate').value || todayStr();
+  const method = $('lMethod').value;
+  const who = $('lWho').value.trim();
+  const notes = $('lNotes').value.trim();
+  if(!who && !notes){ $('logErr').textContent = 'Add who you talked to, or a note.'; return; }
+  $('logErr').textContent = '';
+  const btn = $('logSave');
+  btn.disabled = true;
+  try{
+    if(editingId){
+      await updateDoc(doc(db, 'shops', id, 'contacts', editingId), {date, method, who, notes, updatedAt: serverTimestamp()});
+    }else{
+      await addDoc(logCol(), {date, method, who, notes, createdAt: serverTimestamp()});
+    }
+    const wasFinishing = finishing;
+    resetLogForm();
+    if(wasFinishing){
+      finishing = false;
+      $('finishNote').hidden = true;
+      await updateDoc(shopRef(), {nextDate: '', nextTime: '', nextText: '', updatedAt: serverTimestamp()});
+      $('nDate').value = ''; $('nTime').value = ''; $('nText').value = '';
+      msg('nextMsg', 'Logged. Set the next step.');
+      $('nDate').scrollIntoView({behavior: 'smooth', block: 'center'});
+      $('nDate').focus();
+    }
+  }catch(ex){
+    $('logErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function renderLog(){
+  if(!contacts.length){
+    $('logList').innerHTML = '<p class="muted"><i>Nothing logged yet.</i></p>';
+    return;
+  }
+  $('logList').innerHTML = contacts.map(c =>
+    '<div class="logitem" data-id="' + esc(c.id) + '">' +
+      '<div class="top"><b class="sc">' + esc(fmtDate(c.date).toUpperCase()) + '</b>' +
+      '<span class="pill">' + esc(String(c.method || '').toUpperCase()) + '</span></div>' +
+      (c.who ? '<p style="margin:6px 0 0">With <b>' + esc(c.who) + '</b></p>' : '') +
+      (c.notes ? '<p class="notes">' + esc(c.notes) + '</p>' : '') +
+      '<div class="acts" style="margin-top:10px">' +
+        '<button class="quiet small" data-act="edit" type="button">EDIT</button>' +
+        '<button class="quiet small" data-act="del" type="button">DELETE</button>' +
+      '</div></div>'
+  ).join('');
+}
+$('logList').addEventListener('click', async e=>{
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  const item = btn.closest('.logitem');
+  const c = contacts.find(x => x.id === item.dataset.id);
+  if(!c) return;
+  if(btn.dataset.act === 'edit'){
+    editingId = c.id;
+    $('lDate').value = c.date || todayStr();
+    $('lMethod').value = METHODS.includes(c.method) ? c.method : METHODS[0];
+    $('lWho').value = c.who || ''; $('lNotes').value = c.notes || '';
+    $('logSave').textContent = 'SAVE CHANGES';
+    $('logCancel').hidden = false;
+    $('logForm').scrollIntoView({behavior: 'smooth', block: 'center'});
+  }else if(btn.dataset.act === 'del'){
+    if(!confirm('Delete this log entry?')) return;
+    try{
+      await deleteDoc(doc(db, 'shops', id, 'contacts', c.id));
+      if(editingId === c.id) resetLogForm();
+    }catch(ex){ $('logErr').textContent = "That didn't delete (" + (ex.code || 'error') + ').'; }
+  }
+});
+
+/* keep the shop's "last contact" summary in step with the log */
+async function syncLast(){
+  if(!(haveShop && haveContacts)) return;
+  const l = contacts[0];
+  const want = {lastContact: l ? (l.date || '') : '', lastMethod: l ? (l.method || '') : '', lastWho: l ? (l.who || '') : ''};
+  const key = JSON.stringify(want);
+  if(key === lastSyncKey) return;
+  if(shop.lastContact === want.lastContact && shop.lastMethod === want.lastMethod && shop.lastWho === want.lastWho){ lastSyncKey = key; return; }
+  lastSyncKey = key;
+  try{ await updateDoc(shopRef(), want); }catch(ex){ lastSyncKey = ''; }
+}
+
+/* ---------- tag ---------- */
+$('tagForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const slug = slugify($('tagInput').value);
+  if(!TAG_RE.test(slug)){ $('tagErr').textContent = 'Use letters and numbers, up to 30 characters.'; return; }
+  $('tagInput').value = slug;
+  if(slug === shop.tag){ msg('tagMsg', 'That is already the tag.'); return; }
+  $('tagErr').textContent = '';
+  try{
+    const taken = await getDoc(doc(db, 'tags', slug));
+    if(taken.exists() && taken.data().shopId !== id){ $('tagErr').textContent = 'That tag is already in use. Try another.'; return; }
+    const b = writeBatch(db);
+    b.set(doc(db, 'tags', slug), {shopId: id, note: shop.name || '', createdAt: serverTimestamp()});
+    if(shop.tag) b.delete(doc(db, 'tags', shop.tag));
+    b.update(shopRef(), {tag: slug, updatedAt: serverTimestamp()});
+    await b.commit();
+    msg('tagMsg', shop.tag ? 'Saved. Views counted under the old tag stay with the old tag.' : 'Saved.');
+  }catch(ex){
+    $('tagErr').textContent = "That didn't save (" + (ex.code || 'error') + '). Try again.';
+  }
+});
+$('copyLink').addEventListener('click', ()=>{ if(shop && shop.tag) copyText(tagLink(shop.tag), $('copyLink')); });
+
+/* ---------- delete ---------- */
+$('delShop').addEventListener('click', async ()=>{
+  if(!confirm('Delete ' + (shop.name || 'this shop') + ' and its whole contact log? This cannot be undone.')) return;
+  try{
+    unsubs.forEach(u => u()); unsubs = [];
+    const b = writeBatch(db);
+    contacts.forEach(c => b.delete(doc(db, 'shops', id, 'contacts', c.id)));
+    if(shop.tag) b.delete(doc(db, 'tags', shop.tag));
+    b.delete(shopRef());
+    await b.commit();
+    location.href = 'tracker.html';
+  }catch(ex){
+    $('pageErr').textContent = "That didn't delete (" + (ex.code || 'error') + '). Reload and try again.';
+  }
+});
+
+/* ---------- live data ---------- */
+function start(){
+  if(!id){ $('missing').hidden = false; return; }
+  const fail = ex => { $('pageErr').textContent = 'Could not load data (' + (ex.code || 'error') + ').'; };
+  unsubs.push(onSnapshot(shopRef(), snap=>{
+    $('pageErr').textContent = '';
+    if(!snap.exists()){ $('missing').hidden = false; $('shopBody').hidden = true; return; }
+    shop = {id: snap.id, ...snap.data()};
+    haveShop = true;
+    $('missing').hidden = true; $('shopBody').hidden = false;
+    $('title').textContent = shop.name || 'Shop';
+    document.title = (shop.name || 'Shop') + ' | Shop tracker';
+    if(!filled.details){
+      $('fName').value = shop.name || '';
+      $('fAddr').value = shop.address || '';
+      $('fIg').value = shop.instagram ? '@' + shop.instagram : '';
+      $('fStatus').value = STATUSES.includes(shop.status) ? shop.status : STATUSES[0];
+      filled.details = true;
+    }
+    if(!filled.next){
+      $('nDate').value = shop.nextDate || '';
+      $('nTime').value = shop.nextTime || '';
+      $('nText').value = shop.nextText || '';
+      filled.next = true;
+    }
+    if(!filled.tag){
+      $('tagInput').value = shop.tag || '';
+      filled.tag = true;
+    }
+    renderDerived();
+    if(shop.tag && viewsLoadedFor !== shop.tag) loadTagViews();
+    syncLast();
+  }, fail));
+  unsubs.push(onSnapshot(logCol(), snap=>{
+    contacts = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b)=>{
+      if((a.date || '') !== (b.date || '')) return (a.date || '') < (b.date || '') ? 1 : -1;
+      const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
+    haveContacts = true;
+    renderLog();
+    syncLast();
+  }, fail));
+}
+
+gate({
+  onIn: start,
+  onOut: ()=>{
+    unsubs.forEach(u => u()); unsubs = [];
+    shop = null; contacts = []; haveShop = haveContacts = false;
+    filled = {details: false, next: false, tag: false}; viewsLoadedFor = null; lastSyncKey = '';
+  }
+});
+</script>
+</body>
+</html>
