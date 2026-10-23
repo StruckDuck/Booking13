@@ -1,7 +1,7 @@
 /* Pure helpers shared by admin.html, tracker.html and shop.html. No imports, no DOM. */
 
 export const SITE_URL = 'https://struckduck.github.io/Booking13/';
-export const STATUSES = ['Contacted', 'Followed up', 'Booked', 'Passed'];
+export const STATUSES = ['Not contacted', 'Contacted', 'Followed up', 'Booked', 'Passed'];
 export const METHODS = ['In person', 'Call', 'Text', 'DM', 'Email'];
 export const TAG_RE = /^[a-z0-9][a-z0-9-]{0,29}$/;
 

@@ -71,7 +71,7 @@ const GROUPS = [
 ];
 
 function card(s, today){
-  const status = STATUSES.includes(s.status) ? s.status : 'Contacted';
+  const status = STATUSES.includes(s.status) ? s.status : 'Not contacted';
   const late = s.nextDate && s.nextDate < today && status !== 'Booked' && status !== 'Passed';
   const nl = nextLine(s);
   const last = s.lastContact
@@ -92,7 +92,7 @@ const tile = (v, l) => '<div class="tile"><b>' + v + '</b><span>' + esc(l.toUppe
 function render(){
   const today = todayStr();
   const g = groupShops(shops, today);
-  const count = st => shops.filter(s => (STATUSES.includes(s.status) ? s.status : 'Contacted') === st).length;
+  const count = st => shops.filter(s => (STATUSES.includes(s.status) ? s.status : 'Not contacted') === st).length;
   $('tiles').innerHTML = tile(g.overdue.length + g.today.length, 'Due now') +
     STATUSES.map(st => tile(count(st), st)).join('');
 
@@ -132,7 +132,7 @@ $('addForm').addEventListener('submit', async e=>{
   btn.disabled = true;
   try{
     const ref = await addDoc(collection(db, 'shops'), {
-      name, address, instagram: ig.handle, status: 'Contacted', tag: '',
+      name, address, instagram: ig.handle, status: 'Not contacted', tag: '',
       nextDate: '', nextTime: '', nextText: '',
       lastContact: '', lastMethod: '', lastWho: '',
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
