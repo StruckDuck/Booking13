@@ -55,6 +55,9 @@
         </form>
         <p class="ok" id="detailMsg"></p>
         <div id="igWrap"></div>
+        <label style="margin-top:14px">Message<select id="msgSel"></select></label>
+        <div class="acts" style="margin-top:8px"><button class="small" id="copyMsg" type="button">COPY MESSAGE</button></div>
+        <p class="ok" id="copyMsgNote"></p>
       </section>
 
       <section id="logCard">
@@ -127,7 +130,7 @@
 <script type="module">
 import {
   db, gate, $, esc, STATUSES, METHODS, TAG_RE, parseInstagram, igUrl, todayStr, fmtDate, nextLine,
-  calendarUrl, slugify, tagLink, aggregateViews, ago, loadViewRows, copyText
+  calendarUrl, slugify, tagLink, aggregateViews, ago, loadViewRows, copyText, DEFAULT_TEMPLATES, fillTemplate
 } from './assets/common.js';
 import { mountTagList } from './assets/tags.js';
 import {
@@ -191,6 +194,7 @@ const tagUI = mountTagList($('tagList'), {
   }
 });
 function renderTags(){
+  updateCopyMsg();
   const mine = Object.keys(tagsAll).filter(k => tagsAll[k].shopId === id).sort();
   tagUI.render(mine.map(k => ({
     tag: k, note: tagsAll[k].note || '',
@@ -369,6 +373,41 @@ async function syncLast(){
   try{ await updateDoc(shopRef(), want); }catch(ex){ lastSyncKey = ''; }
 }
 
+/* ---------- outreach message ---------- */
+let templates = [];
+function msgList(){
+  return templates.length ? templates : [{id: '__default', name: DEFAULT_TEMPLATES[0].name, body: DEFAULT_TEMPLATES[0].body}];
+}
+function currentTemplate(){
+  const list = msgList();
+  return list.find(x => x.id === (shop && shop.templateId)) || list[0];
+}
+function renderMsgSel(){
+  const list = msgList(), cur = currentTemplate();
+  $('msgSel').innerHTML = list.map(x => '<option value="' + esc(x.id) + '">' + esc(x.name || 'Untitled') + '</option>').join('');
+  $('msgSel').value = cur.id;
+}
+$('msgSel').addEventListener('change', ()=>{
+  const v = $('msgSel').value;
+  if(v !== '__default') updateDoc(shopRef(), {templateId: v}).catch(()=>{});
+});
+function shopTags(){
+  const mine = Object.keys(tagsAll).filter(k => tagsAll[k].shopId === id).sort();
+  if(shop && mine.includes(shop.tag)) return [shop.tag].concat(mine.filter(k => k !== shop.tag));
+  return mine;
+}
+function updateCopyMsg(){
+  const has = shopTags().length > 0;
+  $('copyMsg').disabled = !has;
+  $('copyMsgNote').textContent = has ? '' : (haveTags ? 'Save a tag under Tracking to use this.' : '');
+}
+$('copyMsg').addEventListener('click', ()=>{
+  const t = shopTags()[0];
+  if(!t) return;
+  const tpl = $('msgSel').value ? (msgList().find(x => x.id === $('msgSel').value) || currentTemplate()) : currentTemplate();
+  copyText(fillTemplate(tpl.body, {shop: shop.name || '', link: tagLink(t)}), $('copyMsg'));
+});
+
 /* ---------- add a tag ---------- */
 $('tagForm').addEventListener('submit', async e=>{
   e.preventDefault();
@@ -427,6 +466,7 @@ function start(){
       filled.next = true;
     }
     renderDerived();
+    renderMsgSel();
     syncLast();
   }, fail));
   unsubs.push(onSnapshot(logCol(), snap=>{
@@ -441,6 +481,10 @@ function start(){
     applyLogUI();
     syncLast();
   }, fail));
+  unsubs.push(onSnapshot(collection(db, 'templates'), snap=>{
+    templates = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b)=> (a.order || 0) - (b.order || 0));
+    renderMsgSel();
+  }, ()=>{ templates = []; renderMsgSel(); }));
   unsubs.push(onSnapshot(collection(db, 'tags'), snap=>{
     tagsAll = {}; snap.forEach(d => { tagsAll[d.id] = d.data(); });
     haveTags = true;
@@ -454,7 +498,7 @@ gate({
   onOut: ()=>{
     unsubs.forEach(u => u()); unsubs = [];
     shop = null; contacts = []; haveShop = haveContacts = false;
-    filled = {details: false, next: false}; lastSyncKey = ''; tagsAll = {}; viewAgg = null; haveTags = false; logOpen = false;
+    filled = {details: false, next: false}; lastSyncKey = ''; tagsAll = {}; viewAgg = null; haveTags = false; logOpen = false; templates = [];
   }
 });
 </script>

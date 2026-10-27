@@ -49,6 +49,19 @@
       </details>
     </section>
 
+    <section>
+      <details class="fold" id="tplFold">
+        <summary>MESSAGES <span id="tplCount"></span></summary>
+        <p class="muted" style="font-size:16px;margin:12px 0 0">Saved messages you can copy from any shop page. Use <b>{shop}</b> for the shop's name and <b>{link}</b> for its tagged link. If a message has no {link}, the link goes at the end.</p>
+        <div id="tplList"></div>
+        <div class="acts">
+          <button class="small" id="tplNew" type="button">NEW MESSAGE</button>
+          <button class="quiet small" id="tplStarter" type="button" hidden>ADD STARTER MESSAGES</button>
+        </div>
+        <p class="err" id="tplErr" role="alert"></p>
+      </details>
+    </section>
+
     <p class="err" id="dataErr" role="alert"></p>
     <div id="groups"></div>
 
@@ -56,11 +69,11 @@
 </div>
 
 <script type="module">
-import { db, gate, $, esc, STATUSES, parseInstagram, igUrl, todayStr, fmtDate, nextLine, groupShops, slugify, claimTag } from './assets/common.js';
-import { collection, doc, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { db, gate, $, esc, STATUSES, parseInstagram, igUrl, todayStr, fmtDate, nextLine, groupShops, slugify, claimTag, DEFAULT_TEMPLATES } from './assets/common.js';
+import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 let shops = [];
-let unsub = null;
+let unsub = null, unsubT = null, templates = [];
 
 const GROUPS = [
   ['overdue', 'Overdue', true],
@@ -146,8 +159,57 @@ $('addForm').addEventListener('submit', async e=>{
   }
 });
 
+/* ---------- saved messages ---------- */
+function renderTemplates(){
+  $('tplCount').textContent = templates.length ? '(' + templates.length + ')' : '';
+  $('tplStarter').hidden = templates.length > 0;
+  $('tplList').innerHTML = templates.length ? templates.map(x =>
+    '<div class="tplcard" data-id="' + esc(x.id) + '">' +
+      '<label>Name<input class="tname" maxlength="60" value="' + esc(x.name || '') + '"></label>' +
+      '<label>Message<textarea class="tbody" rows="9">' + esc(x.body || '') + '</textarea></label>' +
+      '<div class="acts" style="margin-top:0"><button class="solid small" data-a="save" type="button">SAVE</button>' +
+      '<button class="quiet small" data-a="del" type="button">DELETE</button></div>' +
+      '<p class="ok tmsg"></p></div>').join('')
+    : '<p class="muted" style="margin-top:12px"><i>No saved messages yet.</i></p>';
+}
+$('tplList').addEventListener('click', async e=>{
+  const b = e.target.closest('button[data-a]');
+  if(!b) return;
+  const card = b.closest('.tplcard'), tid = card.dataset.id;
+  $('tplErr').textContent = '';
+  try{
+    if(b.dataset.a === 'save'){
+      const name = card.querySelector('.tname').value.trim().slice(0, 60) || 'Untitled';
+      const body = card.querySelector('.tbody').value;
+      await updateDoc(doc(db, 'templates', tid), {name, body});
+      const m = card.querySelector('.tmsg'); m.textContent = 'Saved.';
+      setTimeout(()=>{ m.textContent = ''; }, 2500);
+    }else if(b.dataset.a === 'del'){
+      if(!confirm('Delete this message?')) return;
+      await deleteDoc(doc(db, 'templates', tid));
+    }
+  }catch(ex){ $('tplErr').textContent = "That didn't work (" + (ex.code || 'error') + ').'; }
+});
+$('tplNew').addEventListener('click', async ()=>{
+  $('tplErr').textContent = '';
+  try{ await addDoc(collection(db, 'templates'), {name: 'New message', body: '{link}', order: Date.now(), createdAt: serverTimestamp()}); }
+  catch(ex){ $('tplErr').textContent = "That didn't work (" + (ex.code || 'error') + ').'; }
+});
+$('tplStarter').addEventListener('click', async ()=>{
+  $('tplErr').textContent = '';
+  try{
+    const b = writeBatch(db);
+    DEFAULT_TEMPLATES.forEach((x, i)=> b.set(doc(collection(db, 'templates')), {name: x.name, body: x.body, order: i, createdAt: serverTimestamp()}));
+    await b.commit();
+  }catch(ex){ $('tplErr').textContent = "That didn't work (" + (ex.code || 'error') + ').'; }
+});
+
 gate({
   onIn: ()=>{
+    unsubT = onSnapshot(collection(db, 'templates'), snap=>{
+      templates = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b)=> (a.order || 0) - (b.order || 0));
+      renderTemplates();
+    }, ex=>{ $('tplErr').textContent = 'Could not load messages (' + (ex.code || 'error') + ').'; });
     unsub = onSnapshot(collection(db, 'shops'), snap=>{
       $('dataErr').textContent = '';
       shops = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -156,7 +218,8 @@ gate({
   },
   onOut: ()=>{
     if(unsub) unsub();
-    unsub = null; shops = [];
+    if(unsubT) unsubT();
+    unsub = null; unsubT = null; shops = []; templates = [];
   }
 });
 setInterval(()=>{ if(unsub) render(); }, 60000);

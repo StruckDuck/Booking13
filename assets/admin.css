@@ -143,3 +143,7 @@ details.fold[open]>summary::after{content:'\2212'}
 
 .vtable td:last-child,.vtable th:last-child{text-align:right;width:1%;white-space:nowrap}
 .vtable td:nth-child(2),.vtable th:nth-child(2){text-align:left}
+
+/* saved messages */
+.tplcard{border:1px solid var(--rule);background:var(--oak);padding:12px;margin-top:10px;display:grid;gap:10px}
+.tplcard textarea{min-height:160px}

@@ -138,3 +138,36 @@ export function copyText(text, btn){
     document.body.removeChild(t);
   }
 }
+
+/* ---------- outreach message templates ---------- */
+export const DEFAULT_TEMPLATES = [
+  {name: 'First outreach', body: [
+    'Hello!',
+    'I\u2019m a magician in Fayetteville and I am contacting tattoo shops in the area to let them know of a cool thing I\u2019m offering for the upcoming Friday the 13th!',
+    'I know tattoo shops can get pretty crazy during Friday the 13th events and I am offering my services to entertain your customers while they wait.',
+    'If you are interested but wanna make sure I\u2019m legit I\u2019d be happy to set a time to meet and show you what I do!',
+    'You can learn more at the link.',
+    '{link}'
+  ].join('\n\n')},
+  {name: 'Follow up', body: [
+    'Hi again!',
+    'I stopped by recently about Friday the 13th and wanted to follow up. I\u2019m a close-up magician and I can entertain your customers while they wait, one hour at a time.',
+    'If you\u2019d like to see what I do first, I\u2019m happy to come by and show you. No pressure at all.',
+    'Open times and details are here:',
+    '{link}'
+  ].join('\n\n')},
+  {name: 'After meeting', body: [
+    'Thanks for taking the time to meet with me!',
+    'As we talked about, I can entertain your customers while they wait on Friday the 13th. You can see the open hours and claim the ones you want here:',
+    '{link}'
+  ].join('\n\n')}
+];
+
+/* {shop} becomes the shop name, {link} the tagged link. No {link}? It goes at the end. */
+export function fillTemplate(body, {shop = '', link = ''} = {}){
+  let t = String(body == null ? '' : body);
+  const hasLink = t.includes('{link}');
+  t = t.split('{shop}').join(shop).split('{link}').join(link);
+  if(!hasLink) t = t.replace(/\s+$/, '') + '\n\n' + link;
+  return t;
+}
