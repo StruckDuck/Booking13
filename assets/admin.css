@@ -133,3 +133,10 @@ button.xs{padding:4px 8px;font-size:11px}
 .tagitem .tedit input{flex:1;min-width:0;padding:8px 10px;font-size:15px}
 .tagform{display:grid;gap:8px;margin-top:10px}
 .calnote{border:1px solid var(--litho);padding:8px 12px;margin:0 0 10px;font-size:16px}
+
+/* collapsible lists */
+details.fold{margin-top:14px}
+details.fold>summary{display:flex;justify-content:space-between;align-items:center;width:100%;border-color:var(--rule);color:var(--foxed)}
+details.fold>summary::after{content:'+';color:var(--parch);font-size:18px;line-height:1}
+details.fold[open]>summary{background:transparent;color:var(--foxed);border-color:var(--litho)}
+details.fold[open]>summary::after{content:'\2212'}

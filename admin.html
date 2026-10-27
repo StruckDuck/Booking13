@@ -53,13 +53,14 @@
         <div><button class="solid small" type="submit">SAVE TAG</button></div>
       </form>
       <p class="err" id="tagErr" role="alert" style="margin-top:6px"></p>
-      <div id="tagList"></div>
+      <details class="fold" id="tagFold"><summary>SAVED TAGS <span id="tagCount"></span></summary><div id="tagList"></div></details>
       <div id="tagSeen"></div>
     </section>
 
     <section>
       <h2><small>VIEWS</small>Who looked at the page</h2>
       <div class="tiles" id="viewTiles"></div>
+      <details class="fold" id="srcFold"><summary>SOURCE TAGS</summary><div id="srcTable"></div></details>
       <div id="viewTable"></div>
       <div class="acts"><button class="quiet" id="refreshViews" type="button">REFRESH VIEWS</button></div>
     </section>
@@ -272,6 +273,7 @@ function renderTags(){
     const sa = tags[a].shopId ? 1 : 0, sb = tags[b].shopId ? 1 : 0;
     return (sa - sb) || a.localeCompare(b);
   });
+  $('tagCount').textContent = ids.length ? '(' + ids.length + ')' : '';
   tagUI.render(ids.map(k=>({tag: k, note: tags[k].note || '', views: viewsLoaded ? (agg.byTag[k] || {count: 0, last: 0}) : null})));
 
   const seen = viewsLoaded ? Object.keys(agg.byTag).filter(k=>!tags[k] && TAG_RE.test(k)).sort() : [];
@@ -308,7 +310,9 @@ $('tagSeen').addEventListener('click', async e=>{
 async function loadViews(){
   try{
     const snap = await getDocs(query(collection(db,'visits'), where('page','==','friday13')));
-    const rows = snap.docs.map(d=>d.data()).map(d=>({at: ms(d.at), src: d.src || '', ref: d.referrer || ''})).sort((a,b)=>b.at - a.at);
+    const rows = snap.docs.map(d=>d.data()).map(d=>({at: ms(d.at), src: d.src || '', ref: d.referrer || ''}))
+      .filter(r=>r.src.trim().toLowerCase() !== 'jsuc')   // your own tag, not counted
+      .sort((a,b)=>b.at - a.at);
     viewRows = rows; viewsLoaded = true; renderTags();
     const now = new Date();
     const today = rows.filter(r=>r.at && new Date(r.at).toDateString() === now.toDateString()).length;
@@ -321,9 +325,11 @@ async function loadViews(){
     const recent = rows.slice(0,8).map(r=>
       '<tr><td>'+(r.at ? new Date(r.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '')+
       '</td><td>'+esc(r.src || 'no tag')+'</td></tr>').join('');
+    $('srcTable').innerHTML = rows.length
+      ? '<table><thead><tr><th>Source tag</th><th>Views</th></tr></thead><tbody>'+srcRows+'</tbody></table>'
+      : '';
     $('viewTable').innerHTML = rows.length
-      ? '<table><thead><tr><th>Source tag</th><th>Views</th></tr></thead><tbody>'+srcRows+'</tbody></table>'+
-        '<table><thead><tr><th>Recent</th><th>Source</th></tr></thead><tbody>'+recent+'</tbody></table>'+
+      ? '<table><thead><tr><th>Recent</th><th>Source</th></tr></thead><tbody>'+recent+'</tbody></table>'+
         '<p class="meta muted" style="font-size:15px;margin-top:10px">One view is counted per browser session. Cards scanned with the ?src=card tag show up as "card".</p>'
       : '<p class="muted"><i>No views logged yet.</i></p>';
   }catch(ex){
