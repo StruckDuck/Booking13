@@ -492,19 +492,33 @@ onSnapshot(collection(db,'slots'), snap=>{
 });
 setInterval(()=>{ if(liveState==='ready') applyLive(); }, 60000);
 
-/* ---------- page view log (once per browser session) ---------- */
-try{
-  if(!sessionStorage.getItem('f13v')){
-    sessionStorage.setItem('f13v','1');
-    const q = new URLSearchParams(location.search);
-    addDoc(collection(db,'visits'), {
-      page: 'friday13',
-      src: q.get('src') || '',
-      referrer: document.referrer || '',
-      at: serverTimestamp()
-    }).catch(()=>{});
+/* ---------- page view log (once per browser session) ----------
+   Counts a real person only: not a link-preview or crawler, page on screen,
+   and at least one touch, scroll or mouse move. */
+(function(){
+  const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|twitterbot|applebot|whatsapp|telegram|discord|slack|linkedin|skype|pinterest|embedly|headless|lighthouse|curl|wget|python|node-fetch|monitor/i;
+  try{
+    if(BOT.test(navigator.userAgent || '') || navigator.webdriver) return;
+    if(sessionStorage.getItem('f13v')) return;
+  }catch(e){ return; }
+  const EVENTS = ['pointerdown','touchstart','scroll','wheel','mousemove','keydown'];
+  function act(){
+    if(document.visibilityState !== 'visible') return;
+    EVENTS.forEach(ev => window.removeEventListener(ev, act));
+    try{
+      if(sessionStorage.getItem('f13v')) return;
+      sessionStorage.setItem('f13v','1');
+      const q = new URLSearchParams(location.search);
+      addDoc(collection(db,'visits'), {
+        page: 'friday13',
+        src: q.get('src') || '',
+        referrer: document.referrer || '',
+        at: serverTimestamp()
+      }).catch(()=>{});
+    }catch(e){}
   }
-}catch(e){}
+  EVENTS.forEach(ev => window.addEventListener(ev, act, {passive: true}));
+})();
 </script>
 </body>
 </html>

@@ -307,10 +307,18 @@ $('tagSeen').addEventListener('click', async e=>{
 });
 
 /* ---------- views ---------- */
+$('viewTable').addEventListener('click', async e=>{
+  const b = e.target.closest('button[data-vdel]');
+  if(!b) return;
+  if(!confirm('Delete this view from the log?')) return;
+  b.disabled = true;
+  try{ await deleteDoc(doc(db,'visits',b.dataset.vdel)); await loadViews(); }
+  catch(ex){ b.disabled = false; alert("That didn't delete (" + (ex.code || 'error') + ').'); }
+});
 async function loadViews(){
   try{
     const snap = await getDocs(query(collection(db,'visits'), where('page','==','friday13')));
-    const rows = snap.docs.map(d=>d.data()).map(d=>({at: ms(d.at), src: d.src || '', ref: d.referrer || ''}))
+    const rows = snap.docs.map(d=>({id: d.id, ...d.data()})).map(d=>({id: d.id, at: ms(d.at), src: d.src || '', ref: d.referrer || ''}))
       .filter(r=>r.src.trim().toLowerCase() !== 'jsuc')   // your own tag, not counted
       .sort((a,b)=>b.at - a.at);
     viewRows = rows; viewsLoaded = true; renderTags();
@@ -322,14 +330,14 @@ async function loadViews(){
     const by = {};
     rows.forEach(r=>{ const k = r.src || 'no tag'; by[k] = (by[k]||0) + 1; });
     const srcRows = Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<tr><td>'+esc(k)+'</td><td>'+v+'</td></tr>').join('');
-    const recent = rows.slice(0,8).map(r=>
+    const recent = rows.slice(0,10).map(r=>
       '<tr><td>'+(r.at ? new Date(r.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '')+
-      '</td><td>'+esc(r.src || 'no tag')+'</td></tr>').join('');
+      '</td><td>'+esc(r.src || 'no tag')+'</td><td><button class="quiet xs" data-vdel="'+esc(r.id)+'" type="button" aria-label="Delete this view">DELETE</button></td></tr>').join('');
     $('srcTable').innerHTML = rows.length
       ? '<table><thead><tr><th>Source tag</th><th>Views</th></tr></thead><tbody>'+srcRows+'</tbody></table>'
       : '';
     $('viewTable').innerHTML = rows.length
-      ? '<table><thead><tr><th>Recent</th><th>Source</th></tr></thead><tbody>'+recent+'</tbody></table>'+
+      ? '<table class="vtable"><thead><tr><th>Recent</th><th>Source</th><th></th></tr></thead><tbody>'+recent+'</tbody></table>'+
         '<p class="meta muted" style="font-size:15px;margin-top:10px">One view is counted per browser session. Cards scanned with the ?src=card tag show up as "card".</p>'
       : '<p class="muted"><i>No views logged yet.</i></p>';
   }catch(ex){

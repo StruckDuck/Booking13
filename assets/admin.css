@@ -140,3 +140,6 @@ details.fold>summary{display:flex;justify-content:space-between;align-items:cent
 details.fold>summary::after{content:'+';color:var(--parch);font-size:18px;line-height:1}
 details.fold[open]>summary{background:transparent;color:var(--foxed);border-color:var(--litho)}
 details.fold[open]>summary::after{content:'\2212'}
+
+.vtable td:last-child,.vtable th:last-child{text-align:right;width:1%;white-space:nowrap}
+.vtable td:nth-child(2),.vtable th:nth-child(2){text-align:left}
